@@ -52,6 +52,7 @@ typedef struct {
     off_t size;
     time_t mtime;
     int is_dir;
+    mode_t mode; // Права доступу
 } File;
 
 // Структура для збереження позиції при вході в директорію

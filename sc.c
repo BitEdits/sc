@@ -148,7 +148,7 @@ int main() {
             }
         } else if (c == KEY_PGUP) {
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
-                int max_display = rows - 2;
+                int max_display = rows - 4;
                 history_display_offset += max_display / 2; // Скролимо на пів екрана
                 // Перевіряємо межі
                 int total_lines = 0;
@@ -172,7 +172,7 @@ int main() {
             }
         } else if (c == KEY_PGDOWN) {
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
-                history_display_offset -= (rows - 2) / 2; // Скролимо на пів екрана
+                history_display_offset -= (rows - 4) / 2; // Скролимо на пів екрана
                 if (history_display_offset < 0) history_display_offset = 0;
             } else { // Панелі видимі: Page Down
                 active_panel->cursor += (rows - 4 - 2);
@@ -317,11 +317,16 @@ int main() {
                 command_buffer[len + 1] = 0;
             }
         } else if (c == KEY_F4) { // F4 (Edit)
-            if (!show_command_buffer) {
+            if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
                 char cmd[1024];
-                snprintf(cmd, sizeof(cmd), "./be %s", active_panel->files[active_panel->cursor].name);
+                snprintf(cmd, sizeof(cmd), "./be %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 disable_raw_mode();
-                system(cmd);
+                int ret = system(cmd);
+                if (ret == -1) {
+                    printf("\x1b[2J\x1b[HFailed to execute ./be. Ensure it exists and is executable.\n");
+                    getchar();
+                }
+                system("reset");
                 enable_raw_mode();
             }
         } else if (c == KEY_F9) { // F9 (Menu)
