@@ -40,7 +40,7 @@ void load_files(Panel *panel) {
             continue;
         }
 
-        char full_path[1024];
+        char full_path[1024*8];
         snprintf(full_path, sizeof(full_path), "%s/%s", panel->path, entry->d_name);
 
         struct stat st;

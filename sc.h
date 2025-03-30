@@ -26,29 +26,29 @@
 #define COLOR_WHITE "\x1b[1;37m" // Bright white for text
 
 // Коди для стрілок та інших клавіш
-#define KEY_UP 1000
-#define KEY_DOWN 1001
-#define KEY_RIGHT 1002
-#define KEY_LEFT 1003
-#define KEY_PGUP 1004
+#define KEY_UP     1000
+#define KEY_DOWN   1001
+#define KEY_RIGHT  1002
+#define KEY_LEFT   1003
+#define KEY_PGUP   1004
 #define KEY_PGDOWN 1005
-#define KEY_HOME 1006
-#define KEY_END 1007
-#define KEY_F1 1008
-#define KEY_F2 1009
-#define KEY_F3 1010
-#define KEY_F4 1011
-#define KEY_F5 1012
-#define KEY_F6 1013
-#define KEY_F7 1014
-#define KEY_F8 1015
-#define KEY_F9 1016
-#define KEY_F10 1017
+#define KEY_HOME   1006
+#define KEY_END    1007
+#define KEY_F1     1008
+#define KEY_F2     1009
+#define KEY_F3     1010
+#define KEY_F4     1011
+#define KEY_F5     1012
+#define KEY_F6     1013
+#define KEY_F7     1014
+#define KEY_F8     1015
+#define KEY_F9     1016
+#define KEY_F10    1017
 
 // Максимальна кількість файлів у директорії
 #define MAX_FILES 1000
 // Максимальна кількість команд в історії
-#define MAX_HISTORY 100
+#define MAX_HISTORY 1000
 
 // Структура для файлу
 typedef struct {
@@ -61,14 +61,14 @@ typedef struct {
 
 // Структура для збереження позиції при вході в директорію
 typedef struct {
-    char parent_path[1024];
-    char dir_name[256];
+    char parent_path[1024*2];
+    char dir_name[2560];
     int cursor_pos;
 } DirHistory;
 
 // Структура для панелі
 typedef struct {
-    char path[1024];
+    char path[1024*4];
     File files[MAX_FILES];
     int file_count;
     int cursor;
@@ -81,8 +81,8 @@ typedef struct {
 
 // Структура для історії команд і їх виводів
 typedef struct {
-    char command[1024];
-    char output[16384]; // Буфер для виводів
+    char command[1024*2];
+    char output[16384*4]; // Буфер для виводів
 } CommandEntry;
 
 // Глобальні змінні
@@ -93,7 +93,7 @@ extern int rows, cols;
 extern CommandEntry history[MAX_HISTORY];
 extern int history_count, history_pos;
 extern int history_start; // Індекс початку кільцевого буфера
-extern char command_buffer[1024];
+extern char command_buffer[1024*4];
 extern volatile sig_atomic_t resize_flag;
 extern int show_command_buffer;
 extern int history_scroll_pos; // Позиція прокручування історії команд
@@ -103,7 +103,7 @@ extern int history_display_offset; // Зміщення для відображе
 int get_input();
 void execute_command(const char *cmd);
 
-// Функції з interface.c
+// Функції з menus.c
 void draw_interface();
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor);
 void draw_panel(Panel *panel, int start_col, int width, int is_active);
@@ -114,11 +114,11 @@ void draw_menu();
 int handle_menu();
 void append_to_history_display(const char *command, const char *output);
 
-// Функції з file_utils.c
+// Функції з files.c
 void load_files(Panel *panel);
 int compare_files(const void *a, const void *b);
 
-// Функції з main.c
+// Функції з sc.c
 void enable_raw_mode();
 void disable_raw_mode();
 void get_window_size(int *r, int *c);

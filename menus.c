@@ -78,7 +78,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
         } else if (panel->files[file_idx].is_dir) {
             snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
-            snprintf(size_str, sizeof(size_str), "%lld", panel->files[file_idx].size);
+            snprintf(size_str, sizeof(size_str), "%ld", panel->files[file_idx].size);
         }
         char datetime_str[20];
         strftime(datetime_str, sizeof(datetime_str), "%m-%d-%y|%H:%M", localtime(&panel->files[file_idx].mtime));
@@ -150,7 +150,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         } else if (panel->files[prev_cursor].is_dir) {
             snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
-            snprintf(size_str, sizeof(size_str), "%lld", panel->files[prev_cursor].size);
+            snprintf(size_str, sizeof(size_str), "%ld", panel->files[prev_cursor].size);
         }
         char datetime_str[20];
         strftime(datetime_str, sizeof(datetime_str), "%m-%d-%y|%H:%M", localtime(&panel->files[prev_cursor].mtime));
@@ -167,7 +167,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         } else if (panel->files[panel->cursor].is_dir) {
             snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
-            snprintf(size_str, sizeof(size_str), "%lld", panel->files[panel->cursor].size);
+            snprintf(size_str, sizeof(size_str), "%ld", panel->files[panel->cursor].size);
         }
         char datetime_str[20];
         strftime(datetime_str, sizeof(datetime_str), "%m-%d-%y|%H:%M", localtime(&panel->files[panel->cursor].mtime));
@@ -185,7 +185,7 @@ void append_to_history_display(const char *command, const char *output) {
     int max_display = rows - 4; // Залишаємо місце для меню, командного рядка і нижнього меню
 
     // Збираємо лише видимі рядки історії
-    char *history_lines[16384];
+    char *history_lines[16384*4];
     int line_count = 0;
 
     // Визначаємо, з якого рядка історії починати відображення
@@ -196,12 +196,12 @@ void append_to_history_display(const char *command, const char *output) {
         int idx = (history_start - history_count + i + MAX_HISTORY) % MAX_HISTORY;
         if (i == history_count - 1) {
             // Для останньої команди використовуємо передані command і output
-            char command_line[1024];
+            char command_line[1024*3];
             snprintf(command_line, sizeof(command_line), "> %s", command);
             history_lines[line_count] = strdup(command_line);
             line_count++;
 
-            char output_copy[16384];
+            char output_copy[16384*4];
             strncpy(output_copy, output, sizeof(output_copy) - 1);
             output_copy[sizeof(output_copy) - 1] = 0;
             char *line = strtok(output_copy, "\n");
@@ -212,12 +212,12 @@ void append_to_history_display(const char *command, const char *output) {
             }
         } else {
             // Для попередніх команд використовуємо збережені дані
-            char command_line[1024];
+            char command_line[1024*3];
             snprintf(command_line, sizeof(command_line), "> %s", history[idx].command);
             history_lines[line_count] = strdup(command_line);
             line_count++;
 
-            char output_copy[16384];
+            char output_copy[16384*4];
             strncpy(output_copy, history[idx].output, sizeof(output_copy) - 1);
             output_copy[sizeof(output_copy) - 1] = 0;
             char *line = strtok(output_copy, "\n");
@@ -277,13 +277,13 @@ void draw_interface() {
             int idx = (history_start - history_count + i + MAX_HISTORY) % MAX_HISTORY;
 
             // Додаємо рядок команди
-            char command_line[1024];
+            char command_line[1024*3];
             snprintf(command_line, sizeof(command_line), "> %s", history[idx].command);
             history_lines[line_count] = strdup(command_line);
             line_count++;
 
             // Додаємо вивід команди
-            char output_copy[16384];
+            char output_copy[16384*4];
             strncpy(output_copy, history[idx].output, sizeof(output_copy) - 1);
             output_copy[sizeof(output_copy) - 1] = 0;
             char *line = strtok(output_copy, "\n");
@@ -476,8 +476,8 @@ int handle_menu() {
                     if (selected_item == 0) { // View (F3)
                         // Реалізувати
                     } else if (selected_item == 3) { // Edit (F4)
-                        char cmd[1024];
-                        snprintf(cmd, sizeof(cmd), "./be %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
+                        char cmd[1024*5];
+                        snprintf(cmd, sizeof(cmd), "./be %s", active_panel->path);
                         disable_raw_mode();
                         system(cmd);
                         enable_raw_mode();

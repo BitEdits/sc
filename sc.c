@@ -9,7 +9,7 @@ int rows, cols;
 CommandEntry history[MAX_HISTORY];
 int history_count = 0, history_pos = 0;
 int history_start = 0; // Індекс початку кільцевого буфера
-char command_buffer[1024];
+char command_buffer[1024*4];
 volatile sig_atomic_t resize_flag = 0;
 int show_command_buffer = 0;
 int history_scroll_pos = 0; // Позиція прокручування історії команд
@@ -216,7 +216,7 @@ int main() {
                     active_panel->dir_history_count++;
                 }
 
-                char new_path[1024];
+                char new_path[1024*8];
                 snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 strcpy(active_panel->path, new_path);
                 active_panel->cursor = 0;
@@ -229,7 +229,7 @@ int main() {
         } else if (c == KEY_LEFT && !show_command_buffer) { // Вихід із директорії (Lynx-подібна навігація)
             if (strcmp(active_panel->path, "/") != 0) { // Не корінь
                 // Зберігаємо поточний шлях для порівняння
-                char current_path[1024];
+                char current_path[1024*3];
                 strcpy(current_path, active_panel->path);
 
                 char *last_slash = strrchr(active_panel->path, '/');
@@ -284,7 +284,7 @@ int main() {
         } else if (c == '\n') { // Enter
             if (command_buffer[0] != 0) { // Виконання команди
                 show_command_buffer = 1; // Переходимо в режим Ctrl+O
-                char cmd_copy[1024];
+                char cmd_copy[1024*3];
                 strcpy(cmd_copy, command_buffer);
                 execute_command(command_buffer);
                 append_to_history_display(cmd_copy, history[(history_start - 1 + MAX_HISTORY) % MAX_HISTORY].output);
@@ -297,7 +297,7 @@ int main() {
                     if (strcmp(active_panel->files[active_panel->cursor].name, "..") == 0) {
                         if (strcmp(active_panel->path, "/") != 0) { // Не корінь
                             // Зберігаємо поточний шлях для порівняння
-                            char current_path[1024];
+                            char current_path[1024*3];
                             strcpy(current_path, active_panel->path);
 
                             char *last_slash = strrchr(active_panel->path, '/');
@@ -335,7 +335,7 @@ int main() {
                             active_panel->dir_history_count++;
                         }
 
-                        char new_path[1024];
+                        char new_path[1024*8];
                         snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                         strcpy(active_panel->path, new_path);
                         active_panel->cursor = 0;
@@ -359,7 +359,7 @@ int main() {
             }
         } else if (c == KEY_F4) { // F4 (Edit)
             if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
-                char cmd[1024];
+                char cmd[1024*8];
                 snprintf(cmd, sizeof(cmd), "./be %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 disable_raw_mode();
                 int ret = system(cmd);

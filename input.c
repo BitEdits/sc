@@ -1,6 +1,8 @@
 // input.c
 #include "sc.h"
 
+#include <sys/wait.h>
+
 int get_input() {
     int c = getchar();
     if (c == 27) { // Esc або стрілки
@@ -188,9 +190,9 @@ void execute_command(const char *command) {
     close(pipefd[1]);
 
     // Read the output from the child process
-    char output[16384] = {0};
+    char output[16384*4] = {0};
     size_t total_read = 0;
-    char buffer[1024];
+    char buffer[1024*3];
 
     ssize_t count;
     while ((count = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
