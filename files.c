@@ -1,4 +1,5 @@
-// file_utils.c
+// files.c
+
 #include "sc.h"
 
 int compare_files(const void *a, const void *b) {

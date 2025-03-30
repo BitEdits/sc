@@ -1,7 +1,9 @@
 // sc.h
+
 #ifndef SC_H
 #define SC_H
 
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,10 +47,8 @@
 #define KEY_F9     1016
 #define KEY_F10    1017
 
-// Максимальна кількість файлів у директорії
-#define MAX_FILES 1000
-// Максимальна кількість команд в історії
-#define MAX_HISTORY 1000
+#define MAX_FILES   1000 // Максимальна кількість файлів у директорії
+#define MAX_HISTORY 1000 // Максимальна кількість команд в історії
 
 // Структура для файлу
 typedef struct {

@@ -1,7 +1,6 @@
+// menus.c
+
 #include "sc.h"
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
 
 void draw_panel_border(int start_col, int width, int height) {
     printf("%s", COLOR_TEXT);

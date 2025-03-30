@@ -1,7 +1,6 @@
 // input.c
-#include "sc.h"
 
-#include <sys/wait.h>
+#include "sc.h"
 
 int get_input() {
     int c = getchar();
