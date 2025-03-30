@@ -1,12 +1,6 @@
 // input.c
 #include "sc.h"
 
-/*
-int history_start = 0; // Індекс початку кільцевого буфера
-int history_scroll_pos = 0; // Позиція прокручування історії
-int history_display_offset = 0; // Зміщення для відображення історії
-*/
-
 int get_input() {
     int c = getchar();
     if (c == 27) { // Esc або стрілки

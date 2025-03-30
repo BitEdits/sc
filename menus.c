@@ -76,7 +76,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
         } else if (panel->files[file_idx].is_dir) {
-            snprintf(size_str, sizeof(size_str), "directory");
+            snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[file_idx].size);
         }
@@ -148,7 +148,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
         } else if (panel->files[prev_cursor].is_dir) {
-            snprintf(size_str, sizeof(size_str), "directory");
+            snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[prev_cursor].size);
         }
@@ -165,7 +165,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
         } else if (panel->files[panel->cursor].is_dir) {
-            snprintf(size_str, sizeof(size_str), "directory");
+            snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[panel->cursor].size);
         }
@@ -412,7 +412,7 @@ int handle_menu() {
     };
     const char *command_items[] = {
         "User menu      F2",
-        "Directory tree ",
+        "<dir> tree ",
         "Find file      M-?",
         "Swap panels    C-u",
         "Switch panels on/off C-o",
