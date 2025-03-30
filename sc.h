@@ -39,7 +39,6 @@
 #define KEY_F8 1015
 #define KEY_F9 1016
 #define KEY_F10 1017
-#define KEY_CTRL_S 19 // Ctrl+S
 
 // Максимальна кількість файлів у директорії
 #define MAX_FILES 1000
@@ -92,8 +91,6 @@ extern int history_start; // Індекс початку кільцевого б
 extern char command_buffer[1024];
 extern volatile sig_atomic_t resize_flag;
 extern int show_command_buffer;
-extern char search_buffer[256]; // Буфер для пошуку
-extern int search_active; // Стан пошуку
 extern int history_scroll_pos; // Позиція прокручування історії команд
 extern int history_display_offset; // Зміщення для відображення історії (для скролінгу)
 
@@ -104,14 +101,13 @@ void execute_command(const char *cmd);
 
 // Функції з interface.c
 void draw_interface();
+void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor);
 void draw_panel(Panel *panel, int start_col, int width, int is_active);
 void draw_panel_border(int start_col, int width, int height);
 void draw_exit_dialog();
 int handle_exit_dialog();
 void draw_menu();
 int handle_menu();
-void draw_search_dialog();
-int handle_search_dialog(char *search_query);
 void append_to_history_display(const char *command, const char *output);
 
 // Функції з file_utils.c

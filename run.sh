@@ -1,3 +1,3 @@
 #!/bin/bash
 
-gcc sc.c input.c menus.c files.c -o sc
+gcc sc.c interface.c input.c files.c -o sc
