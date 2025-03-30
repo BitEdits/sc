@@ -17,7 +17,7 @@ void draw_panel_border(int start_col, int width, int height) {
     }
 
     // Нижня рамка
-    printf("\x1b[%d;%dH└", 2 + height, start_col);
+    printf("\x1b[%d;%dH└", 1 + height, start_col);
     for (int i = 0; i < width - 2; i++) printf("─");
     printf("┘");
 }
@@ -38,7 +38,6 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
 
     // Заголовок панелі (шлях)
     printf("\x1b[2;%dH%s %s ", start_col + 1, COLOR_HEADER, panel->path);
-    for (int i = strlen(panel->path) + start_col + 2; i < start_col + width - 1; i++) printf(" ");
 
     // Заголовки колонок
     int name_width = width - 4 - 23; // 65% для імені
@@ -317,11 +316,6 @@ void draw_interface() {
         int panel_width = (cols - 1) / 2; // 1 для роздільника
         draw_panel(&left_panel, 1, panel_width, active_panel == &left_panel);
         draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
-
-        // Вертикальна лінія між панелями
-        for (int i = 2; i < rows - 2; i++) {
-            printf("\x1b[%d;%dH│", i, panel_width + 1);
-        }
     }
 
     // Командний рядок
@@ -567,7 +561,7 @@ int handle_menu() {
 }
 
 void draw_exit_dialog(int selected_button) {
-    int dialog_width = 45;
+    int dialog_width = 50;
     int dialog_height = 5;
     int start_row = (rows - dialog_height) / 2;
     int start_col = (cols - dialog_width) / 2;
@@ -597,7 +591,7 @@ void draw_exit_dialog(int selected_button) {
 
     // Текст (білий колір)
     printf("%s", COLOR_WHITE);
-    const char *message = "Do you want to exit Sokhatskyi Commander?";
+    const char *message = "Do you want to exit Sokhatsky Commander?";
     int message_col = start_col + (dialog_width - strlen(message)) / 2;
     printf("\x1b[%d;%dH%s", start_row + 1, message_col, message);
 
