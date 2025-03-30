@@ -39,6 +39,12 @@ int get_input() {
                     if (c4 == '1') { getchar(); return KEY_F10; } // F10: \033[21~
                 }
             }
+        } else if (c2 == 'O') {
+            int c3 = getchar();
+            if (c3 == 'P') return KEY_F1;   // F1: \033OP
+            if (c3 == 'Q') return KEY_F2;   // F2: \033OQ
+            if (c3 == 'R') return KEY_F3;   // F3: \033OR
+            if (c3 == 'S') return KEY_F4;   // F4: \033OS
         } else if (c2 == 27) {
             return 27; // Esc
         } else {
