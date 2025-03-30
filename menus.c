@@ -116,7 +116,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[%d;%dH Total: %s, files: %d, directories: %d.", status_row + 1, start_col + 1, size_display, total_files, total_directories);
+    printf("\x1b[%d;%dH Total: %s, files: %d, directories: %d. ", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor) {
