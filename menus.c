@@ -81,7 +81,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[file_idx].size);
         }
         char datetime_str[20];
-        strftime(datetime_str, sizeof(datetime_str), "%m-%d-%yT%H:%M", localtime(&panel->files[file_idx].mtime));
+        strftime(datetime_str, sizeof(datetime_str), "%m-%d-%y|%H:%M", localtime(&panel->files[file_idx].mtime));
 
         // Форматування з сепараторами
         printf("%-*.*s│%*s│%*s", name_width, name_width, name, size_width, size_str, date_width, datetime_str);
@@ -153,13 +153,13 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[prev_cursor].size);
         }
         char datetime_str[20];
-        strftime(datetime_str, sizeof(datetime_str), "%m-%d-%yT%H:%M", localtime(&panel->files[prev_cursor].mtime));
+        strftime(datetime_str, sizeof(datetime_str), "%m-%d-%y|%H:%M", localtime(&panel->files[prev_cursor].mtime));
         printf("%-*.*s│%*s│%*s", name_width, name_width, name, size_width, size_str, date_width, datetime_str);
     }
 
     // Перемальовуємо нову позицію (додаємо підсвітку)
     if (curr_idx >= 0 && curr_idx < visible_files) {
-        printf("\x1b[%d;%dH%s", curr_idx + 4, start_col + 0, is_active ? COLOR_HIGHLIGHT : (panel->files[panel->cursor].is_dir ? COLOR_DIR : COLOR_TEXT));
+        printf("\x1b[%d;%dH%s", curr_idx + 4, start_col + 1, is_active ? COLOR_HIGHLIGHT : (panel->files[panel->cursor].is_dir ? COLOR_DIR : COLOR_TEXT));
         char *name = panel->files[panel->cursor].name;
         char size_str[16];
         if (strcmp(name, "..") == 0) {
@@ -170,7 +170,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[panel->cursor].size);
         }
         char datetime_str[20];
-        strftime(datetime_str, sizeof(datetime_str), "%m/%d/%y %H:%M", localtime(&panel->files[panel->cursor].mtime));
+        strftime(datetime_str, sizeof(datetime_str), "%m-%d-%y|%H:%M", localtime(&panel->files[panel->cursor].mtime));
         printf("%-*.*s│%*s│%*s", name_width, name_width, name, size_width, size_str, date_width, datetime_str);
     }
 }
