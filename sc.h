@@ -14,7 +14,7 @@
 #include <signal.h>
 
 // Кольори
-#define COLOR_HEADER "\x1b[1;33m\x1b[44m"
+#define COLOR_HEADER "\x1b[1;37m\x1b[40m"
 #define COLOR_TEXT "\x1b[1;37m\x1b[40m"
 #define COLOR_HIGHLIGHT "\x1b[1;30m\x1b[47m"
 #define COLOR_DIR "\x1b[1;36m\x1b[40m"

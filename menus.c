@@ -41,9 +41,9 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     for (int i = strlen(panel->path) + start_col + 2; i < start_col + width - 1; i++) printf(" ");
 
     // Заголовки колонок
-    int name_width = (width - 4) * 0.65; // 65% для імені
-    int size_width = (width - 4) * 0.15; // 15% для розміру/типу
-    int date_width = (width - 4) * 0.20; // 20% для дати
+    int name_width = width - 4 - 23; // 65% для імені
+    int size_width = 9 ; // 15% для розміру/типу
+    int date_width = 14 ; // 20% для дати
     int sep1 = start_col + 1 + name_width;
     int sep2 = sep1 + size_width;
 
@@ -76,7 +76,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
         } else if (panel->files[file_idx].is_dir) {
-            snprintf(size_str, sizeof(size_str), "Folder");
+            snprintf(size_str, sizeof(size_str), "directory");
         } else {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[file_idx].size);
         }
@@ -98,11 +98,11 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     printf("┤");
 
     // Статусна строка панелі
-    int total_files = 0, total_folders = 0;
+    int total_files = 0, total_directories = 0;
     long long total_size = 0;
     for (int i = 0; i < panel->file_count; i++) {
         if (panel->files[i].is_dir) {
-            if (strcmp(panel->files[i].name, "..") != 0) total_folders++;
+            if (strcmp(panel->files[i].name, "..") != 0) total_directories++;
         } else {
             total_files++;
             total_size += panel->files[i].size;
@@ -116,7 +116,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[%d;%dHBytes: %s, files: %d, folders: %d", status_row + 1, start_col + 1, size_display, total_files, total_folders);
+    printf("\x1b[%d;%dHBytes: %s, files: %d, directories: %d", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor) {
@@ -131,9 +131,10 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
     }
 
     // Сепаратори для регіонів
-    int name_width = (width - 4) * 0.65; // 65% для імені
-    int size_width = (width - 4) * 0.15; // 15% для розміру/типу
-    int date_width = (width - 4) * 0.20; // 20% для дати
+
+    int name_width = width - 4 - 23; // 65% для імені
+    int size_width = 9 ; // 15% для розміру/типу
+    int date_width = 14 ; // 20% для дати
 
     // Оновлюємо лише попередню і нову позиції курсора
     int prev_idx = prev_cursor - panel->scroll_offset;
@@ -147,7 +148,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
         } else if (panel->files[prev_cursor].is_dir) {
-            snprintf(size_str, sizeof(size_str), "Folder");
+            snprintf(size_str, sizeof(size_str), "directory");
         } else {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[prev_cursor].size);
         }
@@ -164,7 +165,7 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
         } else if (panel->files[panel->cursor].is_dir) {
-            snprintf(size_str, sizeof(size_str), "Folder");
+            snprintf(size_str, sizeof(size_str), "directory");
         } else {
             snprintf(size_str, sizeof(size_str), "%lld", panel->files[panel->cursor].size);
         }
@@ -335,10 +336,9 @@ void draw_interface() {
 void draw_menu() {
     const char *menu_tabs[] = {"Left", "File", "Command", "Options", "Right"};
     int tab_count = 5;
-    int start_col = 1;
-
+    int start_col = 10;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[1;37m\x1b[42m%-*s", cols, ""); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[1;45m\x1b[37m%-*s", cols, "▄ SC"); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
@@ -441,7 +441,8 @@ int handle_menu() {
         "Panelize       C-r"
     };
 
-    int item_counts[] = {12, 21, 18, 6, 12};
+    int item_counts[] = {6, 16, 12, 6, 6};
+
     const char **submenus[] = {left_items, file_items, command_items, options_items, right_items};
 
     // Малюємо основний інтерфейс перед входом у модальність
@@ -452,7 +453,7 @@ int handle_menu() {
         draw_menu();
 
         // Підсвічуємо вибрану вкладку
-        int tab_start_col = 1;
+        int tab_start_col = 10;
         for (int i = 0; i < selected_tab; i++) {
             tab_start_col += strlen(menu_tabs[i]) + 3;
         }
@@ -566,7 +567,7 @@ int handle_menu() {
 }
 
 void draw_exit_dialog(int selected_button) {
-    int dialog_width = 60;
+    int dialog_width = 45;
     int dialog_height = 5;
     int start_row = (rows - dialog_height) / 2;
     int start_col = (cols - dialog_width) / 2;
@@ -596,7 +597,7 @@ void draw_exit_dialog(int selected_button) {
 
     // Текст (білий колір)
     printf("%s", COLOR_WHITE);
-    const char *message = "Do you want to exit Сохацький Commander?";
+    const char *message = "Do you want to exit Sokhatskyi Commander?";
     int message_col = start_col + (dialog_width - strlen(message)) / 2;
     printf("\x1b[%d;%dH%s", start_row + 1, message_col, message);
 
