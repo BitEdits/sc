@@ -596,7 +596,7 @@ void draw_exit_dialog(int selected_button) {
 
     // Текст (білий колір)
     printf("%s", COLOR_WHITE);
-    const char *message = "Do you want to exit Sokhatsky Commander?";
+    const char *message = "Do you want to exit Сохацький Commander?";
     int message_col = start_col + (dialog_width - strlen(message)) / 2;
     printf("\x1b[%d;%dH%s", start_row + 1, message_col, message);
 

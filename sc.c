@@ -176,9 +176,10 @@ int main() {
                 if (active_panel->cursor < 0) active_panel->cursor = 0;
                 int panel_width = (cols - 1) / 2;
                 int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-                update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//                update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
                 cmd_pos = 0;
                 command_buffer[0] = 0;
+                draw_interface();
             }
         } else if (c == KEY_PGDOWN) {
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
@@ -194,6 +195,7 @@ int main() {
                 update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
                 cmd_pos = 0;
                 command_buffer[0] = 0;
+                draw_interface();
             }
         } else if (c == KEY_RIGHT && !show_command_buffer) { // Вхід у директорію (Lynx-подібна навігація)
             if (active_panel->files[active_panel->cursor].is_dir) {
@@ -256,9 +258,10 @@ int main() {
             active_panel->scroll_offset = 0;
             int panel_width = (cols - 1) / 2;
             int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-            update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//            update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
             cmd_pos = 0;
             command_buffer[0] = 0;
+            draw_interface();
         } else if (c == KEY_END && !show_command_buffer) { // End
             prev_cursor = active_panel->cursor;
             active_panel->cursor = active_panel->file_count - 1;
@@ -266,9 +269,10 @@ int main() {
             if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
             int panel_width = (cols - 1) / 2;
             int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-            update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//            update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
             cmd_pos = 0;
             command_buffer[0] = 0;
+            draw_interface();
         } else if (c == '\n') { // Enter
             if (command_buffer[0] != 0) { // Виконання команди
                 show_command_buffer = 1; // Переходимо в режим Ctrl+O
