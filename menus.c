@@ -57,12 +57,13 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     // Файли
     for (int i = 0; i < visible_files; i++) {
         int file_idx = i + panel->scroll_offset;
-        if (file_idx >= panel->file_count) {
-            // Заповнення порожнього простору
-            printf("\x1b[%d;%dH%s", i + 4, start_col + 1, COLOR_TEXT);
-            for (int j = 0; j < width - 2; j++) printf(" ");
-            continue;
-        }
+
+          if (file_idx >= panel->file_count) {
+             // Заповнення порожнього простору
+             printf("\x1b[%d;%dH%s", i + 4, start_col + 1, COLOR_TEXT);
+             printf("%-*.*s│%*s│%*s", name_width, name_width, "", size_width, "", date_width, "");
+             continue;
+          }
 
         if (is_active && file_idx == panel->cursor) {
             printf("\x1b[%d;%dH%s", i + 4, start_col + 1, COLOR_HIGHLIGHT);
@@ -115,7 +116,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[%d;%dHBytes: %s, files: %d, directories: %d", status_row + 1, start_col + 1, size_display, total_files, total_directories);
+    printf("\x1b[%d;%dH Total: %s, files: %d, directories: %d.", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor) {
