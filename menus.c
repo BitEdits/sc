@@ -565,15 +565,22 @@ int handle_menu() {
     return 0;
 }
 
-
-void draw_exit_dialog() {
-    int dialog_width = 40;
+void draw_exit_dialog(int selected_button) {
+    int dialog_width = 60;
     int dialog_height = 5;
     int start_row = (rows - dialog_height) / 2;
     int start_col = (cols - dialog_width) / 2;
 
-    // Малюємо рамку
-    printf("%s", COLOR_TEXT);
+    // Малюємо заповнений фон рожевого кольору
+    for (int i = 0; i < dialog_height; i++) {
+        printf("\x1b[%d;%dH%s", start_row + i, start_col, COLOR_PINK_BG);
+        for (int j = 0; j < dialog_width; j++) {
+            printf(" ");
+        }
+    }
+
+    // Малюємо тонку рамку магентового кольору
+    printf("%s", COLOR_MAGENTA);
     printf("\x1b[%d;%dH┌", start_row, start_col);
     for (int i = 0; i < dialog_width - 2; i++) printf("─");
     printf("┐");
@@ -587,17 +594,49 @@ void draw_exit_dialog() {
     for (int i = 0; i < dialog_width - 2; i++) printf("─");
     printf("┘");
 
-    // Текст
-    printf("\x1b[%d;%dHDo you want to exit Sokhatsky Commander?", start_row + 1, start_col + 2);
-    printf("\x1b[%d;%dHY/N?", start_row + 3, start_col + dialog_width / 2 - 2);
+    // Текст (білий колір)
+    printf("%s", COLOR_WHITE);
+    const char *message = "Do you want to exit Sokhatsky Commander?";
+    int message_col = start_col + (dialog_width - strlen(message)) / 2;
+    printf("\x1b[%d;%dH%s", start_row + 1, message_col, message);
+
+    // Кнопки [Yes] і [No]
+    int button_row = start_row + 3;
+    int yes_col = start_col + (dialog_width / 2) - 8; // Центруємо кнопки
+    int no_col = start_col + (dialog_width / 2) + 2;
+
+    // Кнопка [Yes]
+    if (selected_button == 0) {
+        printf("\x1b[%d;%dH%s[Yes]%s", button_row, yes_col, COLOR_BUTTON_HIGHLIGHT, COLOR_RESET);
+    } else {
+        printf("\x1b[%d;%dH%s[Yes]%s", button_row, yes_col, COLOR_WHITE, COLOR_RESET);
+    }
+
+    // Кнопка [No]
+    if (selected_button == 1) {
+        printf("\x1b[%d;%dH%s[No]%s", button_row, no_col, COLOR_BUTTON_HIGHLIGHT, COLOR_RESET);
+    } else {
+        printf("\x1b[%d;%dH%s[No]%s", button_row, no_col, COLOR_WHITE, COLOR_RESET);
+    }
+
+    printf("%s", COLOR_RESET); // Reset colors after drawing
 }
 
 int handle_exit_dialog() {
-    draw_exit_dialog();
+    int selected_button = 0; // 0 = Yes, 1 = No
+    draw_exit_dialog(selected_button);
+
     while (1) {
         int c = get_input();
-        if (c == 'y' || c == 'Y') return 1;
-        if (c == 'n' || c == 'N') return 0;
+        if (c == 'y' || c == 'Y') {
+            return 1; // Yes
+        } else if (c == 'n' || c == 'N' || c == 27) { // Esc
+            return 0; // No
+        } else if (c == '\t' || c == KEY_RIGHT || c == KEY_LEFT) { // Tab
+            selected_button = (selected_button + 1) % 2; // Перемикаємо між Yes і No
+            draw_exit_dialog(selected_button);
+        } else if (c == '\n') { // Enter
+            return (selected_button == 0) ? 1 : 0; // Yes if selected_button is 0, No if 1
+        }
     }
 }
-
