@@ -101,7 +101,6 @@ extern int history_display_offset; // Зміщення для відображе
 
 // Функції з input.c
 int get_input();
-void handle_command_input();
 void execute_command(const char *cmd);
 
 // Функції з interface.c

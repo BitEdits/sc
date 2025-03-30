@@ -276,19 +276,3 @@ void execute_command_popen(const char *cmd) {
     history_display_offset = 0; // Скидаємо зміщення відображення
 }
 
-void handle_command_input() {
-    disable_raw_mode();
-    printf("\x1b[2J\x1b[H"); // Очистити екран
-
-    // Відображаємо історію команд
-    for (int i = 0; i < history_count; i++) {
-        int idx = (history_start - history_count + i + MAX_HISTORY) % MAX_HISTORY;
-        printf("%s\n", history[idx].command);
-        printf("%s\n", history[idx].output);
-    }
-    printf("\nPress Ctrl+O to return...");
-
-    while (getchar() != 15); // Чекаємо Ctrl+O
-
-    enable_raw_mode();
-}

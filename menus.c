@@ -343,7 +343,7 @@ void draw_menu() {
 }
 
 void draw_submenu(const char *items[], int item_count, int start_row, int start_col, int selected) {
-    int width = 30; // Фіксована ширина підменю
+    int width = 36; // Фіксована ширина підменю
     int height = item_count + 2;
 
     // Малюємо рамку
@@ -619,7 +619,7 @@ void draw_exit_dialog(int selected_button) {
 }
 
 int handle_exit_dialog() {
-    int selected_button = 0; // 0 = Yes, 1 = No
+    int selected_button = 1; // 0 = Yes, 1 = No
     draw_exit_dialog(selected_button);
 
     while (1) {
