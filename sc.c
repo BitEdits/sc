@@ -114,7 +114,11 @@ int main() {
                     active_panel->cursor--;
                     int panel_width = (cols - 1) / 2;
                     int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-                    update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                    if (active_panel->cursor % rows < rows){
+                        draw_panel(active_panel, start_col, panel_width, 1);
+                    } else {
+                       update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                    }
                     cmd_pos = 0;
                     command_buffer[0] = 0;
                 }
@@ -134,7 +138,11 @@ int main() {
                     active_panel->cursor++;
                     int panel_width = (cols - 1) / 2;
                     int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-                    update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                    if (active_panel->cursor > rows - 4 - 2) {
+                        draw_panel(active_panel, start_col, panel_width, 1);
+                    } else {
+                        update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                    }
                     cmd_pos = 0;
                     command_buffer[0] = 0;
                 }
@@ -359,7 +367,6 @@ int main() {
                     printf("\x1b[2J\x1b[HFailed to execute ./be. Ensure it exists and is executable.\n");
                     getchar();
                 }
-                system("reset");
                 enable_raw_mode();
                 draw_interface();
             }
