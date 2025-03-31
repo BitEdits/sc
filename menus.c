@@ -115,7 +115,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 4, " ");
+    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 5, " ");
     printf("\x1b[37m\x1b[%d;%dH Total: %s, files: %d, directories: %d.", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
@@ -314,17 +314,17 @@ void draw_command_line() {
 
 void draw_bottom_bar() {
     // Нижнє меню
-    printf("\x1b[%d;1H\x1b[37m\x1b[44m↑"
-           "\x1b[37;40m 1\x1b[90;106mHelp "
-           "\x1b[37;40m 2\x1b[90;106mUser "
-           "\x1b[37;40m 3\x1b[90;106mView "
-           "\x1b[37;40m 4\x1b[90;106mEdit "
-           "\x1b[37;40m 5\x1b[90;106mCopy "
-           "\x1b[37;40m 6\x1b[90;106mMove "
-           "\x1b[37;40m 7\x1b[90;106mMake "
-           "\x1b[37;40m 8\x1b[90;106mDelete "
-           "\x1b[37;40m 9\x1b[90;106mMenu "
-           "\x1b[37;40m 10\x1b[90;106mQuit "
+    printf("\x1b[%d;1H\x1b[37m\x1b[44m∀ "
+           "\x1b[37;40m 1\x1b[90;106mHelp"
+           "\x1b[37;40m 2\x1b[90;106mUser"
+           "\x1b[37;40m 3\x1b[90;106mView"
+           "\x1b[37;40m 4\x1b[90;106mEdit"
+           "\x1b[37;40m 5\x1b[90;106mCopy"
+           "\x1b[37;40m 6\x1b[90;106mMove"
+           "\x1b[37;40m 7\x1b[90;106mMake"
+           "\x1b[37;40m 8\x1b[90;106mDelete"
+           "\x1b[37;40m 9\x1b[90;106mMenu"
+           "\x1b[37;40m 10\x1b[90;106mExit"
            "\x1b[37;40m 11\x1b[90;106mPlugin "
            "\x1b[37;40m 12\x1b[90;106mScreen%s", rows, COLOR_RESET);
 }
