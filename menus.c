@@ -45,7 +45,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     int sep1 = start_col + 1 + name_width;
     int sep2 = sep1 + size_width;
 
-    printf("\x1b[3;%dH%-*s│%-*s│%-*s", start_col + 1, name_width, "Name", size_width, "Size", date_width, "Date Time");
+    printf("\x1b[36m\x1b[3;%dH%-*s│%-*s│%-*s%s", start_col + 1, name_width, "Name", size_width, "Size", date_width, "Date Time", COLOR_RESET);
 
     // Сепаратори для колонок
     for (int i = 0; i < visible_files; i++) { // Reduced by 1 to avoid extra line
