@@ -61,7 +61,7 @@ void enable_raw_mode() {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-void get_window_size(int *r, int *c) {
+int get_window_size(int *r, int *c) {
     struct winsize ws;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
     *r = ws.ws_row;

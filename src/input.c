@@ -169,7 +169,7 @@ void execute_command(const char *cmd) {
 
 }
 
-void finalize_exec(char *cmd) {
+void finalize_exec(const char *cmd) {
     command_copy = strdup(cmd);
     output_copy = strdup(output);
 
