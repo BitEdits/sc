@@ -16,11 +16,11 @@
 #include <signal.h>
 
 // Кольори
-#define COLOR_HEADER "\x1b[1;37m\x1b[40m"
-#define COLOR_TEXT "\x1b[1;37m\x1b[40m"
+#define COLOR_HEADER "\x1b[37;46m\x1b[40m"
+#define COLOR_TEXT "\x1b[35;46m\x1b[40m"
 #define COLOR_HIGHLIGHT "\x1b[1;30m\x1b[47m"
-#define COLOR_DIR "\x1b[1;36m\x1b[40m"
-#define COLOR_RESET "\x1b[0m"
+#define COLOR_DIR "\x1b[37;46m\x1b[40m"
+#define COLOR_RESET "\x1b[30;40m"
 
 #define COLOR_PINK_BG "\x1b[48;2;255;105;180m"
 #define COLOR_BUTTON_HIGHLIGHT "\x1b[1;37m\x1b[44m"

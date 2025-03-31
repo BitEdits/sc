@@ -36,7 +36,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     draw_panel_border(start_col, width, panel_height);
 
     // Заголовок панелі (шлях)
-    printf("\x1b[2;%dH%s %s ", start_col + 1, COLOR_HEADER, panel->path);
+    printf("\x1b[35;46m\x1b[2;%dH%s %s ", start_col + 1, COLOR_HEADER, panel->path);
 
     // Заголовки колонок
     int name_width = width - 4 - 23; // 65% для імені
@@ -88,7 +88,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
 
     // Горизонтальна лінія перед статусною строкою
     int status_row = 4 + visible_files;
-    printf("\x1b[%d;%dH├", status_row, start_col);
+    printf("%s\x1b[%d;%dH├", COLOR_TEXT, status_row, start_col);
     for (int i = 0; i < name_width; i++) printf("─");
     printf("┴");
     for (int i = 0; i < size_width; i++) printf("─");
@@ -115,7 +115,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[%d;%dH Total: %s, files: %d, directories: %d. ", status_row + 1, start_col + 1, size_display, total_files, total_directories);
+    printf("\x1b[37m\x1b[%d;%dH Total: %s, files: %d, directories: %d. ", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor) {
@@ -230,31 +230,26 @@ void append_to_history_display(const char *command, const char *output) {
 
     // Відображаємо лише видимі рядки
     for (int i = 0; i < max_display && i < line_count; i++) {
-        printf("\x1b[%d;1H%-*s", i + 2, cols, history_lines[i]);
+        printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, history_lines[i]);
     }
 
     // Очищаємо залишок екрана
     for (int i = line_count; i < max_display; i++) {
-        printf("\x1b[%d;1H%-*s", i + 2, cols, "");
+        printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, "");
     }
 
     // Оновлюємо командний рядок
-    printf("\x1b[%d;1H%-*s", rows - 2, cols, "");
-    printf("\x1b[%d;1H%s%s>%s", rows - 2, COLOR_TEXT, active_panel->path, command_buffer);
+    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 2, cols, "");
+    printf("\x1b[37;40m\x1b[%d;1H%s%s>%s", rows - 2, COLOR_TEXT, active_panel->path, command_buffer);
 
     // Оновлюємо нижнє меню
-    printf("\x1b[%d;1H\x1b[1;37m\x1b[42m%-*s", rows - 1, cols, "");
-    printf("\x1b[%d;1H\x1b[1;37m\x1b[42m↑1Help 2UserMn 3View 4Edit 5Copy 6RenMov 7MkFold 8Delete 9ConfMn 10Quit 11Plugin 12Screen%s", rows - 1, COLOR_RESET);
+    printf("\x1b[37;40m\x1b[%d;1H\x1b[1;37m\x1b[42m%-*s", rows - 1, cols, "");
+    printf("\x1b[37;40m\x1b[%d;1H\x1b[1;37m\x1b[42m↑1Help 2UserMn 3View 4Edit 5Copy 6RenMov 7MkFold 8Delete 9ConfMn 10Quit 11Plugin 12Screen%s", rows - 1, COLOR_RESET);
 
     // Звільняємо пам’ять
     for (int i = 0; i < line_count; i++) {
         free(history_lines[i]);
     }
-
-    // Time after history display
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    fprintf(stderr, "Time to display history (optimized): %.3f seconds\n", elapsed);
 }
 
 void draw_interface() {
@@ -304,7 +299,7 @@ void draw_interface() {
 
         // Очищаємо залишок екрана
         for (int i = line_count - start_line; i < max_display; i++) {
-            printf("\x1b[%d;1H%-*s", i + 2, cols, "");
+            printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, "");
         }
 
         // Звільняємо пам’ять
@@ -319,12 +314,25 @@ void draw_interface() {
     }
 
     // Командний рядок
-    printf("\x1b[%d;1H%-*s", rows - 2, cols, "");
-    printf("\x1b[%d;1H%s%s>%s", rows - 2, COLOR_TEXT, active_panel->path, command_buffer);
+    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 2, cols, "");
+    printf("\x1b[37;40m\x1b[%d;1H%s>%s", rows - 2, active_panel->path, command_buffer);
 
     // Нижнє меню
-    printf("\x1b[%d;1H\x1b[1;37m\x1b[42m%-*s", rows - 1, cols, "");
-    printf("\x1b[%d;1H\x1b[1;37m\x1b[42m↑1Help 2UserMn 3View 4Edit 5Copy 6RenMov 7MkFold 8Delete 9ConfMn 10Quit 11Plugin 12Screen%s", rows - 1, COLOR_RESET);
+//    printf("\x1b[%d;1H\x1b[1;37m\x1b[42m%-*s", rows - 1, cols, "");
+
+    printf("\x1b[%d;1H\x1b[37m\x1b[44m↑"
+           "\x1b[37;40m 1\x1b[90;106mHelp "
+           "\x1b[37;40m 2\x1b[90;106mUser "
+           "\x1b[37;40m 3\x1b[90;106mView "
+           "\x1b[37;40m 4\x1b[90;106mEdit "
+           "\x1b[37;40m 5\x1b[90;106mCopy "
+           "\x1b[37;40m 6\x1b[90;106mMove "
+           "\x1b[37;40m 7\x1b[90;106mMake "
+           "\x1b[37;40m 8\x1b[90;106mDelete "
+           "\x1b[37;40m 9\x1b[90;106mMenu "
+           "\x1b[37;40m 10\x1b[90;106mQuit "
+           "\x1b[37;40m 11\x1b[90;106mPlugin "
+           "\x1b[37;40m 12\x1b[90;106mScreen%s", rows - 1, COLOR_RESET);
 }
 
 void draw_menu() {
@@ -332,13 +340,15 @@ void draw_menu() {
     int tab_count = 5;
     int start_col = 10;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[1;45m\x1b[37m%-*s", cols, "▄ SC"); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 6, ""); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
-        printf("\x1b[1;%dH%s", start_col, menu_tabs[i]);
+        printf("\x1b[90;106m\x1b[1;%dH%s", start_col, menu_tabs[i]);
         start_col += strlen(menu_tabs[i]) + 3; // Фіксований відступ 3 символи
     }
+
+    printf(COLOR_RESET);
 }
 
 void draw_submenu(const char *items[], int item_count, int start_row, int start_col, int selected) {

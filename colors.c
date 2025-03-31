@@ -59,8 +59,6 @@ void print_color_table() {
     printf(" [4;93;105] \x1b[4;93;105mUnderline Bright Yellow on Bright Purple\x1b[0m | ");
     printf(" [7;36;41] \x1b[7;36;41mInverse Cyan on Red\x1b[0m\n");
 
-    // Підказка для завершення
-    printf("\nPress any key to exit...\n");
 }
 
 int main() {
@@ -72,12 +70,9 @@ int main() {
     // Виведення таблиці кольорів
     print_color_table();
 
-    // Очікування вводу для завершення
-    getchar();
-
     // Відновлення налаштувань термінала
     reset_terminal(&oldt);
-    printf("\x1b[2J\x1b[1;1H"); // Очистити екран перед виходом
+//    printf("\x1b[2J\x1b[1;1H"); // Очистити екран перед виходом
 
     return 0;
 }
