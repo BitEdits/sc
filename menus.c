@@ -485,9 +485,9 @@ int handle_menu() {
                 } else if (selected_tab == 1) { // File
                     if (selected_item == 0) { // View (F3)
                         // Реалізувати
-                    } else if (selected_item == 3) { // Edit (F4)
+                    } else if (selected_item == 2) { // Edit (F4)
                         char cmd[1024*5];
-                        snprintf(cmd, sizeof(cmd), "mcedit %s", active_panel->path);
+                        snprintf(cmd, sizeof(cmd), "./be %s", active_panel->path);
                         disable_raw_mode();
                         system(cmd);
                         enable_raw_mode();
