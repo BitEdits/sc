@@ -374,13 +374,13 @@ int main() {
                 }
 
                 enable_raw_mode();
-                atexit(disable_raw_mode);
+//                atexit(disable_raw_mode);
 
                 // Увімкнути альтернативний буфер екрана
                 printf("\x1b[?1049h");
 
                 // Встановлення обробника SIGWINCH
-                signal(SIGWINCH, handle_resize);
+//                signal(SIGWINCH, handle_resize);
 
                 get_window_size(&rows, &cols);
 
