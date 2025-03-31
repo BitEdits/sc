@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <pty.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <stdio.h>

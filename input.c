@@ -9,6 +9,8 @@ void execute_command(const char *cmd) {
     size_t total_read = 0;
     char buffer[1024 * 3];
     int status;
+    char *command_copy = malloc(1024); //strdup(cmd);
+    char *output_copy = malloc(65536); //strdup(output);
 
     // Create pipe to capture output
     if (pipe(pipefd) == -1) {
@@ -94,9 +96,10 @@ void execute_command(const char *cmd) {
     draw_interface();
 
 log_and_exit:
-    // Log to history (adapted from your original)
-    char *command_copy = strdup(cmd);
-    char *output_copy = strdup(output);
+
+    command_copy = strdup(cmd);
+    output_copy = strdup(output);
+
     if (command_copy && output_copy) {
         strncpy(history[history_start].command, command_copy, sizeof(history[history_start].command) - 1);
         history[history_start].command[sizeof(history[history_start].command) - 1] = '\0';
