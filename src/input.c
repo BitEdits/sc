@@ -12,10 +12,9 @@ void execute_command(const char *cmd) {
     char *command_copy = malloc(1024); //strdup(cmd);
     char *output_copy = malloc(65536); //strdup(output);
 
+    printf("\x1b[%d;1H\x1b[1;37;40m%-*s", rows, cols, "");
+    printf("\x1b[%d;1H", rows);   // Move to last row (rows is from get_window_size), clear line
     printf("\x1b[K");                 // Clear line
-    printf("\x1b[%d;1H", rows);       // Move to last row (rows is from get_window_size), clear line
-    printf("\x1b[%d;1H\x1b[1;37;40m%-*s", rows - 1, cols, "");
-    printf("\x1b[%d;1H", rows - 1);   // Move to last row (rows is from get_window_size), clear line
 
     // Create pipe to capture output
     if (pipe(pipefd) == -1) {
