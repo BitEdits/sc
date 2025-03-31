@@ -1,6 +1,6 @@
 // input.c
 
-#include "sc.h"
+#include "socha.h"
 
 void execute_command(const char *cmd) {
     pid_t pid;

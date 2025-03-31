@@ -1,6 +1,6 @@
-// sc.c
+// start.c
 
-#include "sc.h"
+#include "socha.h"
 
 // Глобальні змінні
 struct termios orig_termios;

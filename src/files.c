@@ -1,6 +1,6 @@
 // files.c
 
-#include "sc.h"
+#include "socha.h"
 
 int compare_files(const void *a, const void *b) {
     File *fa = (File *)a;
