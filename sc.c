@@ -20,11 +20,7 @@ void enable_raw_mode() {
     struct termios raw;
     tcgetattr(STDIN_FILENO, &orig_termios);
     raw = orig_termios;
-#ifdef __APPLE__
     raw.c_lflag &= ~(ICANON | ECHO | IEXTEN);
-#else
-    raw.c_lflag &= ~(ICANON | ECHO | IEXTEN);
-#endif
     raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
