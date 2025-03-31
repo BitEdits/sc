@@ -36,7 +36,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     draw_panel_border(start_col, width, panel_height);
 
     // Заголовок панелі (шлях)
-    printf("\x1b[35;46m\x1b[2;%dH%s %s ", start_col + 1, COLOR_HEADER, panel->path);
+    printf("\x1b[2;%dH%s %s ", start_col + 1, COLOR_HEADER, panel->path);
 
     // Заголовки колонок
     int name_width = width - 4 - 23; // 65% для імені
@@ -45,7 +45,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     int sep1 = start_col + 1 + name_width;
     int sep2 = sep1 + size_width;
 
-    printf("\x1b[36m\x1b[3;%dH%-*s│%-*s│%-*s%s", start_col + 1, name_width, "Name", size_width, "Size", date_width, "Date Time", COLOR_RESET);
+    printf("%s\x1b[3;%dH%-*s│%-*s│%-*s%s", COLOR_TEXT, start_col + 1, name_width, "Name", size_width, "Size", date_width, "Date Time", COLOR_RESET);
 
     // Сепаратори для колонок
     for (int i = 0; i < visible_files; i++) { // Reduced by 1 to avoid extra line
@@ -115,7 +115,8 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[37m\x1b[%d;%dH Total: %s, files: %d, directories: %d. ", status_row + 1, start_col + 1, size_display, total_files, total_directories);
+    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 5, " ");
+    printf("\x1b[37m\x1b[%d;%dH Total: %s, files: %d, directories: %d.", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor) {
@@ -475,7 +476,7 @@ int handle_menu() {
                 selected_item--;
             } else if (c == KEY_DOWN && selected_item < item_counts[selected_tab] - 1) {
                 selected_item++;
-            } else if (c == 13) {
+            } else if (c == '\n') {
                 // Виконуємо дію
                 if (selected_tab == 0) { // Left
                     if (selected_item == 0) { // Listing
@@ -486,7 +487,7 @@ int handle_menu() {
                         // Реалізувати
                     } else if (selected_item == 3) { // Edit (F4)
                         char cmd[1024*5];
-                        snprintf(cmd, sizeof(cmd), "./be %s", active_panel->path);
+                        snprintf(cmd, sizeof(cmd), "mcedit %s", active_panel->path);
                         disable_raw_mode();
                         system(cmd);
                         enable_raw_mode();
