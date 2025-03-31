@@ -3,6 +3,11 @@
 #ifndef SC_H
 #define SC_H
 
+#include <sys/types.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <pty.h>
+#include <errno.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +22,6 @@
 
 // Кольори
 #define COLOR_HEADER "\x1b[1;97;104m"
-// #define COLOR_TEXT "\x1b[1;36m\x1b[40m"
 #define COLOR_TEXT "\x1b[1;96;104m"
 #define COLOR_HIGHLIGHT "\x1b[1;30m\x1b[47m"
 #define COLOR_DIR "\x1b[1;97;104m"
