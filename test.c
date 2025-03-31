@@ -3,31 +3,23 @@
 #include <termios.h>
 
 int main() {
-    struct termios oldt, newt;
+    struct termios old, raw;
     int ch;
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-
-    // Disable canonical mode, echo, and signal generation
-    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
-    newt.c_iflag &= ~(IXON | ICRNL);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
+    tcgetattr(STDIN_FILENO, &old);
+    raw = old;
+    raw.c_lflag &= ~(ICANON | ECHO | ISIG | IEXTEN); // Enable CTRL-O for Sokhatsky Commander
+    tcsetattr(STDIN_FILENO, TCSANOW, &raw);
     printf("Press Ctrl+C to exit...\n");
-
     while (1) {
         ch = getchar();
         printf("Char: %d (0x%x)\n", ch, ch);
-
-        if (ch == 0x03) {  // Ctrl+C
+        if (ch == 3) {  // Ctrl+C
             printf("\nCaught Ctrl+C! Exiting.\n");
             break;
         } else {
             printf("You pressed: %d (0x%02x)\n", ch, ch);
         }
     }
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    tcsetattr(STDIN_FILENO, TCSANOW, &old);
     return 0;
 }
