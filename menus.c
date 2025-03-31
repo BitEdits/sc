@@ -115,7 +115,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 5, " ");
+    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 4, " ");
     printf("\x1b[37m\x1b[%d;%dH Total: %s, files: %d, directories: %d.", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
@@ -400,22 +400,24 @@ int handle_menu() {
         "Panelize       C-r"
     };
     const char *file_items[] = {
-        "View           F3",
-        "Edit           F4",
-        "Copy           F5",
-        "Chmod          C-x c",
-        "Link           C-x l",
-        "Edit symlink   C-x s",
-        "Chown          C-x o",
-        "Advanced chown ",
-        "Chattr         C-x e",
-        "Rename/Move    F6",
-        "Mkdir          F7",
-        "Delete         F8",
-        "Select group   +",
-        "Unselect group -",
-        "Invert selection *",
-        "Exit           F10"
+        "User Manual        F1",
+        "User Applications  F2",
+        "View               F3",
+        "Edit               F4",
+        "Copy               F5",
+        "Rename/Move        F6",
+        "Mkdir              F7",
+        "Delete             F8",
+        "Menu               F9",
+        "Exit               F10",
+        "Chmod              C-x c",
+        "Link               C-x l",
+        "Edit symlink       C-x s",
+        "Chown              C-x o",
+        "Chattr             C-x e",
+        "Select group       +",
+        "Unselect group     -",
+        "Invert selection   *",
     };
     const char *command_items[] = {
         "Command history   C-o",
@@ -439,7 +441,7 @@ int handle_menu() {
         "Panelize       C-r"
     };
 
-    int item_counts[] = {6, 16, 3, 6, 6};
+    int item_counts[] = {6, 18, 3, 6, 6};
 
     const char **submenus[] = {left_items, file_items, command_items, options_items, right_items};
 
@@ -476,20 +478,18 @@ int handle_menu() {
                         // Реалізувати
                     }
                 } else if (selected_tab == 1) { // File
-                    if (selected_item == 0) { // View (F3)
-                        // Реалізувати
-                    } else if (selected_item == 1) { // Edit (F4)
+                    if (selected_item == 3) { // Edit (F4)
                         char cmd[1024*5];
                         snprintf(cmd, sizeof(cmd), "mcedit %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                         disable_raw_mode();
                         system(cmd);
                         enable_raw_mode();
-                    } else if (selected_item == 15) { // Exit (F10)
+                    } else if (selected_item == 9) { // Exit (F10)
                         if (handle_exit_dialog()) {
                            printf("\x1b[?1049l");
                            printf("\x1b[2J\x1b[H");
                            exit(0);
-                        }
+                        } else return 0;
                     }
                 } else if (selected_tab == 2) { // Command
                     if (selected_item == 0) { // Command history (C-o)
