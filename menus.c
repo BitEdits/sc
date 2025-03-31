@@ -341,11 +341,11 @@ void draw_menu() {
     int tab_count = 5;
     int start_col = 10;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[96;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 6, ""); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 6, ""); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
-        printf("\x1b[96;106m\x1b[1;%dH%s", start_col, menu_tabs[i]);
+        printf("\x1b[90;106m\x1b[1;%dH%s", start_col, menu_tabs[i]);
         start_col += strlen(menu_tabs[i]) + 3; // Фіксований відступ 3 символи
     }
 
@@ -375,9 +375,9 @@ void draw_submenu(const char *items[], int item_count, int start_row, int start_
     // Відображаємо пункти підменю
     for (int i = 0; i < item_count; i++) {
         if (i == selected) {
-            printf("\x1b[%d;%dH\x1b[97;47m%-*s", start_row + 1 + i, start_col + 1, width - 2, items[i]);
+            printf("\x1b[%d;%dH\x1b[90;47m%-*s", start_row + 1 + i, start_col + 1, width - 2, items[i]);
         } else {
-            printf("\x1b[96;46m");
+            printf("\x1b[97;46m");
             printf("\x1b[%d;%dH%-*s", start_row + 1 + i, start_col + 1, width - 2, items[i]);
         }
     }
@@ -457,7 +457,7 @@ int handle_menu() {
         for (int i = 0; i < selected_tab; i++) {
             tab_start_col += strlen(menu_tabs[i]) + 3;
         }
-        printf("\x1b[1;%dH\x1b[97;107m%s", tab_start_col, menu_tabs[selected_tab]);
+        printf("\x1b[1;%dH\x1b[90;47m%s", tab_start_col, menu_tabs[selected_tab]);
 
         // Якщо підменю активне, малюємо його
         if (submenu_active) {
