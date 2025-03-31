@@ -2,6 +2,6 @@
 
 echo "Compiling..."
 
-gcc sc.c menus.c input.c files.c -o sc
+gcc src/sc.c src/menus.c src/input.c src/files.c -o sc
 
 echo "OK"

@@ -99,11 +99,11 @@ int main() {
             active_panel = (active_panel == &left_panel) ? &right_panel : &left_panel;
             int panel_width = (cols - 1) / 2;
             if (prev_active) {
-                update_cursor(&left_panel, 1, panel_width, 0, prev_cursor);
-                update_cursor(&right_panel, panel_width + 2, panel_width, 1, active_panel->cursor);
+                update_cursor(&left_panel, 1, panel_width + 1, 0, prev_cursor);
+                update_cursor(&right_panel, panel_width + 2, panel_width + 1, 1, active_panel->cursor);
             } else {
-                update_cursor(&right_panel, panel_width + 2, panel_width, 0, prev_cursor);
-                update_cursor(&left_panel, 1, panel_width, 1, active_panel->cursor);
+                update_cursor(&right_panel, panel_width + 2, panel_width + 1, 0, prev_cursor);
+                update_cursor(&left_panel, 1, panel_width + 1, 1, active_panel->cursor);
             }
             prev_cursor = active_panel->cursor;
             cmd_pos = 0;
@@ -116,9 +116,9 @@ int main() {
                     int panel_width = (cols - 1) / 2;
                     int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
                     if (active_panel->cursor % rows < rows){
-                        draw_panel(active_panel, start_col, panel_width, 1);
+                        draw_panel(active_panel, start_col, panel_width + 1, 1);
                     } else {
-                       update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                       update_cursor(active_panel, start_col, panel_width + 1, 1, prev_cursor);
                     }
                     cmd_pos = 0;
                     command_buffer[0] = 0;
@@ -140,9 +140,9 @@ int main() {
                     int panel_width = (cols - 1) / 2;
                     int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
                     if (active_panel->cursor > rows - 4 - 2) {
-                        draw_panel(active_panel, start_col, panel_width, 1);
+                        draw_panel(active_panel, start_col, panel_width + 1, 1);
                     } else {
-                        update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                        update_cursor(active_panel, start_col, panel_width + 1, 1, prev_cursor);
                     }
                     cmd_pos = 0;
                     command_buffer[0] = 0;
@@ -185,7 +185,7 @@ int main() {
                 if (active_panel->cursor < 0) active_panel->cursor = 0;
                 int panel_width = (cols - 1) / 2;
                 int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-//                update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//                update_cursor(active_panel, start_col, panel_width + 1, 1, prev_cursor);
                 cmd_pos = 0;
                 command_buffer[0] = 0;
                 draw_interface();
@@ -198,10 +198,10 @@ int main() {
             } else { // Панелі видимі: Page Down
                 prev_cursor = active_panel->cursor;
                 active_panel->cursor += (rows - 4 - 2);
-                if (active_panel->cursor >= active_panel->file_count) active_panel->cursor = active_panel->file_count - 1;
+                if (active_panel->cursor > active_panel->file_count) active_panel->cursor = active_panel->file_count - 1;
                 int panel_width = (cols - 1) / 2;
                 int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-                update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//                update_cursor(active_panel, start_col, panel_width + 1, 1, prev_cursor);
                 cmd_pos = 0;
                 command_buffer[0] = 0;
                 draw_interface();
@@ -267,7 +267,7 @@ int main() {
             active_panel->scroll_offset = 0;
             int panel_width = (cols - 1) / 2;
             int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-//            update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//          update_cursor(active_panel, start_col, panel_width + 1, 1, prev_cursor);
             cmd_pos = 0;
             command_buffer[0] = 0;
             draw_interface();
@@ -278,7 +278,7 @@ int main() {
             if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
             int panel_width = (cols - 1) / 2;
             int start_col = (active_panel == &left_panel) ? 1 : panel_width + 2;
-//            update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+//          update_cursor(active_panel, start_col, panel_width + 1, 1, prev_cursor);
             cmd_pos = 0;
             command_buffer[0] = 0;
             draw_interface();

@@ -3,7 +3,7 @@
 #include "sc.h"
 
 void draw_panel_border(int start_col, int start_row, int width, int height, char *color) {
-    if (color) printf(color);
+    if (color) printf("%s",color);
 
     // Верхня рамка
     printf("\x1b[%d;%dH┌", start_row, start_col); // Start at row 2 to leave space for top menu
@@ -115,7 +115,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     } else {
         snprintf(size_display, sizeof(size_display), "%.1f M", total_size / (1024.0 * 1024.0));
     }
-    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 5, " ");
+    printf("\x1b[37m\x1b[%d;%dH %-*s ", status_row + 1, start_col + 1, cols / 2 - 4, " ");
     printf("\x1b[37m\x1b[%d;%dH Total: %s, files: %d, directories: %d.", status_row + 1, start_col + 1, size_display, total_files, total_directories);
 }
 
@@ -298,8 +298,8 @@ void draw_interface() {
     } else {
         // Панелі
         int panel_width = (cols - 1) / 2; // 1 для роздільника
-        draw_panel(&left_panel, 1, panel_width, active_panel == &left_panel);
-        draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
+        draw_panel(&left_panel, 1, panel_width + 1, active_panel == &left_panel);
+        draw_panel(&right_panel, panel_width + 2, panel_width + 1, active_panel == &right_panel);
     }
 
    draw_command_line();
@@ -332,7 +332,7 @@ void draw_menu() {
     int tab_count = 5;
     int start_col = 10;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 6, ""); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 5, ""); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
