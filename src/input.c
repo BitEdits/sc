@@ -167,6 +167,7 @@ void execute_command(const char *cmd) {
 
 #endif
 
+    finalize_exec(cmd);
 }
 
 void finalize_exec(const char *cmd) {
