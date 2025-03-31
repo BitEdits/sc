@@ -3,7 +3,6 @@
 #include "socha.h"
 
 // Глобальні змінні
-struct termios orig_termios;
 Panel left_panel, right_panel;
 Panel *active_panel;
 int rows, cols;
@@ -16,6 +15,42 @@ int show_command_buffer = 0;
 int history_scroll_pos = 0; // Позиція прокручування історії команд
 int history_display_offset = 0; // Зміщення для відображення історії
 
+#ifdef _WIN32
+
+HANDLE hStdin;
+DWORD orig_mode;
+
+void enable_raw_mode() {
+    hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hStdin, &orig_mode);
+    DWORD raw_mode = orig_mode;
+    raw_mode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
+    SetConsoleMode(hStdin, raw_mode);
+}
+
+void disable_raw_mode() {
+    SetConsoleMode(hStdin, orig_mode);
+}
+
+int get_window_size(int *rows, int *cols) {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (!GetConsoleScreenBufferInfo(hStdOut, &csbi)) {
+        return -1;
+    }
+    *cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    *rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    return 0;
+}
+
+#else
+
+struct termios orig_termios;
+
+void disable_raw_mode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
 void enable_raw_mode() {
     struct termios raw;
     tcgetattr(STDIN_FILENO, &orig_termios);
@@ -26,16 +61,14 @@ void enable_raw_mode() {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-void disable_raw_mode() {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-}
-
 void get_window_size(int *r, int *c) {
     struct winsize ws;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
     *r = ws.ws_row;
     *c = ws.ws_col;
 }
+
+#endif
 
 void handle_resize(int sig) {
     resize_flag = 1;
@@ -50,7 +83,7 @@ int main() {
     printf("\x1b[?1049h");
 
     // Встановлення обробника SIGWINCH
-    signal(SIGWINCH, handle_resize);
+  //  signal(SIGWINCH, handle_resize);
 
     get_window_size(&rows, &cols);
 
@@ -376,7 +409,7 @@ int main() {
                 enable_raw_mode();
                 atexit(disable_raw_mode);
 //              printf("\x1b[?1049h");
-                signal(SIGWINCH, handle_resize);
+//                signal(SIGWINCH, handle_resize);
                 get_window_size(&rows, &cols);
                 draw_interface();
             }

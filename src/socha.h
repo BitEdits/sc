@@ -3,20 +3,27 @@
 #ifndef SC_H
 #define SC_H
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <windows.h>
+#include <process.h>
+#else
+#include <sys/wait.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#endif
+
 #include <sys/types.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
 #include <signal.h>
 
 // Кольори
@@ -124,10 +131,10 @@ void append_to_history_display(const char *command, const char *output);
 void load_files(Panel *panel);
 int compare_files(const void *a, const void *b);
 
-// Функції з sc.c
+// Функції з start.c
 void enable_raw_mode();
 void disable_raw_mode();
-void get_window_size(int *r, int *c);
+int get_window_size(int *r, int *c);
 void handle_resize(int sig);
 
 #endif

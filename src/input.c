@@ -2,15 +2,79 @@
 
 #include "socha.h"
 
+char *command_copy; //strdup(cmd);
+char *output_copy; //strdup(output);
+char output[16384 * 4] = {0};
+char buffer[1024 * 3];
+
 void execute_command(const char *cmd) {
+
+ #ifdef _WIN32
+    HANDLE hChildStdoutRead, hChildStdoutWrite;
+    SECURITY_ATTRIBUTES saAttr;
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    DWORD bytesRead;
+    size_t total_read = 0;
+
+    printf("\x1b[%d;1H\x1b[1;37;40m%-*s", rows, cols, "");
+    printf("\x1b[%d;1H", rows);   // Move to last row (rows is from get_window_size), clear line
+    printf("\x1b[K");                 // Clear line
+
+    // Create pipe to capture output
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    if (!CreatePipe(&hChildStdoutRead, &hChildStdoutWrite, &saAttr, 0)) {
+        snprintf(output, sizeof(output), "Error: Failed to create pipe");
+        finalize_exec(cmd);
+        return;
+    }
+
+    // Set up STARTUPINFO for process creation
+    ZeroMemory(&si, sizeof(STARTUPINFO));
+    si.cb = sizeof(STARTUPINFO);
+    si.hStdOutput = hChildStdoutWrite;
+    si.hStdError = hChildStdoutWrite;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
+
+    // Create the process
+    if (!CreateProcess(NULL, (char *)cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+        snprintf(output, sizeof(output), "Error: Failed to create process");
+        finalize_exec(cmd);
+        return;
+    }
+
+    // Close write end of pipe in parent
+    CloseHandle(hChildStdoutWrite);
+
+    // Read output in real-time and display it
+    while (ReadFile(hChildStdoutRead, buffer, sizeof(buffer) - 1, &bytesRead, NULL) && bytesRead > 0) {
+        buffer[bytesRead] = '\0';
+        write(STDOUT_FILENO, buffer, bytesRead); // Display immediately
+        if (total_read + bytesRead < sizeof(output)) {
+            strncat(output, buffer, bytesRead);
+            total_read += bytesRead;
+        }
+    }
+
+    // Wait for child process to finish
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(hChildStdoutRead);
+
+    #else
+
     pid_t pid;
     int pipefd[2];
-    char output[16384 * 4] = {0};
     size_t total_read = 0;
-    char buffer[1024 * 3];
     int status;
-    char *command_copy = malloc(1024); //strdup(cmd);
-    char *output_copy = malloc(65536); //strdup(output);
+    command_copy = malloc(1024); //strdup(cmd);
+    output_copy = malloc(65536); //strdup(output);
 
     printf("\x1b[%d;1H\x1b[1;37;40m%-*s", rows, cols, "");
     printf("\x1b[%d;1H", rows);   // Move to last row (rows is from get_window_size), clear line
@@ -19,7 +83,8 @@ void execute_command(const char *cmd) {
     // Create pipe to capture output
     if (pipe(pipefd) == -1) {
         snprintf(output, sizeof(output), "Error: Failed to create pipe");
-        goto log_and_exit;
+        finalize_exec(cmd);
+        return;
     }
 
     // Block SIGCHLD to prevent race conditions (from MC's my_system)
@@ -34,7 +99,8 @@ void execute_command(const char *cmd) {
         close(pipefd[1]);
         snprintf(output, sizeof(output), "Error: Failed to fork");
         sigprocmask(SIG_SETMASK, &old_mask, NULL);
-        goto log_and_exit;
+        finalize_exec(cmd);
+        return;
     }
 
     if (pid == 0) { // Child process
@@ -99,8 +165,11 @@ void execute_command(const char *cmd) {
     enable_raw_mode();
     draw_interface();
 
-log_and_exit:
+#endif
 
+}
+
+void finalize_exec(char *cmd) {
     command_copy = strdup(cmd);
     output_copy = strdup(output);
 
