@@ -66,8 +66,7 @@ void execute_command(const char *cmd) {
 
     // Suspend our raw mode to let child take over terminal
     disable_raw_mode();
-//  printf("\x1b[2J\x1b[H");          // Clear screen
-//  printf("\x1b[K");                 // Clear line
+    printf("\x1b[K");                 // Clear line
     printf("\x1b[%d;1H", rows);       // Move to last row (rows is from get_window_size), clear line
     printf("\x1b[%d;1H\x1b[1;37;40m%-*s", rows - 1, cols, "");
     printf("\x1b[%d;1H", rows - 1);   // Move to last row (rows is from get_window_size), clear line
