@@ -23,7 +23,7 @@ void enable_raw_mode() {
 #ifdef __APPLE__
     raw.c_lflag &= ~(ICANON | ECHO | IEXTEN);
 #else
-    raw.c_lflag &= ~(ICANON | ECHO | ISIG | IEXTEN);
+    raw.c_lflag &= ~(ICANON | ECHO | IEXTEN);
 #endif
     raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
