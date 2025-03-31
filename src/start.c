@@ -396,6 +396,21 @@ int main() {
                 command_buffer[len + 1] = 0;
                 draw_interface();
             }
+        } else if (c == KEY_F3) { // F3 (View)
+            if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
+                char cmd[1024*8];
+                snprintf(cmd, sizeof(cmd), "be %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
+                disable_raw_mode();
+                int ret = system(cmd);
+                if (ret == -1) {
+                    printf("\x1b[2J\x1b[HFailed to execute viewer. Ensure it exists and is executable.\n");
+                    getchar();
+                }
+                enable_raw_mode();
+                atexit(disable_raw_mode);
+                get_window_size(&rows, &cols);
+                draw_interface();
+            }
         } else if (c == KEY_F4) { // F4 (Edit)
             if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
                 char cmd[1024*8];
@@ -409,7 +424,7 @@ int main() {
                 enable_raw_mode();
                 atexit(disable_raw_mode);
 //              printf("\x1b[?1049h");
-//                signal(SIGWINCH, handle_resize);
+//              signal(SIGWINCH, handle_resize);
                 get_window_size(&rows, &cols);
                 draw_interface();
             }
