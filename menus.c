@@ -341,11 +341,11 @@ void draw_menu() {
     int tab_count = 5;
     int start_col = 10;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 6, ""); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[96;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, cols - 6, ""); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
-        printf("\x1b[90;106m\x1b[1;%dH%s", start_col, menu_tabs[i]);
+        printf("\x1b[96;106m\x1b[1;%dH%s", start_col, menu_tabs[i]);
         start_col += strlen(menu_tabs[i]) + 3; // Фіксований відступ 3 символи
     }
 
@@ -357,7 +357,8 @@ void draw_submenu(const char *items[], int item_count, int start_row, int start_
     int height = item_count + 2;
 
     // Малюємо рамку
-    printf("%s", COLOR_TEXT);
+    printf("\x1b[96;46m");
+
     printf("\x1b[%d;%dH┌", start_row, start_col);
     for (int i = 0; i < width - 2; i++) printf("─");
     printf("┐");
@@ -374,8 +375,9 @@ void draw_submenu(const char *items[], int item_count, int start_row, int start_
     // Відображаємо пункти підменю
     for (int i = 0; i < item_count; i++) {
         if (i == selected) {
-            printf("\x1b[%d;%dH\x1b[1;30m\x1b[47m%-*s\x1b[0m", start_row + 1 + i, start_col + 1, width - 2, items[i]);
+            printf("\x1b[%d;%dH\x1b[97;47m%-*s", start_row + 1 + i, start_col + 1, width - 2, items[i]);
         } else {
+            printf("\x1b[96;46m");
             printf("\x1b[%d;%dH%-*s", start_row + 1 + i, start_col + 1, width - 2, items[i]);
         }
     }
@@ -416,18 +418,9 @@ int handle_menu() {
         "Exit           F10"
     };
     const char *command_items[] = {
-        "User menu      F2",
-        "<dir> tree ",
-        "Find file      M-?",
-        "Swap panels    C-u",
-        "Switch panels on/off C-o",
-        "Compare directories C-x d",
-        "External panelize C-x !",
-        "Command history M-h",
-        "Viewed/edited files history M-E",
-        "Directory hotlist C-\\",
-        "Background jobs C-x j",
-        "Screen list    M-'"
+        "Command history   C-o",
+        "Find file         C-s",
+        "Swap panels       C-u",
     };
     const char *options_items[] = {
         "Layout...",
@@ -446,7 +439,7 @@ int handle_menu() {
         "Panelize       C-r"
     };
 
-    int item_counts[] = {6, 16, 12, 6, 6};
+    int item_counts[] = {6, 16, 3, 6, 6};
 
     const char **submenus[] = {left_items, file_items, command_items, options_items, right_items};
 
@@ -462,7 +455,7 @@ int handle_menu() {
         for (int i = 0; i < selected_tab; i++) {
             tab_start_col += strlen(menu_tabs[i]) + 3;
         }
-        printf("\x1b[1;%dH\x1b[1;30m\x1b[47m%s\x1b[1;37m\x1b[42m", tab_start_col, menu_tabs[selected_tab]);
+        printf("\x1b[1;%dH\x1b[97;107m%s", tab_start_col, menu_tabs[selected_tab]);
 
         // Якщо підменю активне, малюємо його
         if (submenu_active) {
@@ -485,24 +478,26 @@ int handle_menu() {
                 } else if (selected_tab == 1) { // File
                     if (selected_item == 0) { // View (F3)
                         // Реалізувати
-                    } else if (selected_item == 2) { // Edit (F4)
+                    } else if (selected_item == 1) { // Edit (F4)
                         char cmd[1024*5];
-                        snprintf(cmd, sizeof(cmd), "./be %s", active_panel->path);
+                        snprintf(cmd, sizeof(cmd), "mcedit %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                         disable_raw_mode();
                         system(cmd);
                         enable_raw_mode();
-                        return 0; // Виходимо з меню після виконання дії
-                    } else if (selected_item == 20) { // Exit (F10)
-                        return 1; // Сигналізуємо вихід
+                    } else if (selected_item == 15) { // Exit (F10)
+                        if (handle_exit_dialog()) {
+                           printf("\x1b[?1049l");
+                           printf("\x1b[2J\x1b[H");
+                           exit(0);
+                        }
                     }
                 } else if (selected_tab == 2) { // Command
-                    if (selected_item == 0) { // User menu (F2)
-                        // Реалізувати
-                    } else if (selected_item == 8) { // Command history (M-h)
+                    if (selected_item == 0) { // Command history (C-o)
                         show_command_buffer = 1;
                         history_scroll_pos = history_count;
                         history_display_offset = 0;
-                        return 0; // Виходимо з меню
+                        draw_interface();
+                        return 0;
                     }
                 } else if (selected_tab == 3) { // Options
                     // Реалізувати
@@ -513,59 +508,32 @@ int handle_menu() {
                 }
                 submenu_active = 0; // Закриваємо підменю після виконання дії
             } else if (c == 27 || c == KEY_LEFT || c == KEY_RIGHT) { // Esc або стрілки вліво/вправо
+                printf(COLOR_TEXT);
                 if (c == KEY_LEFT && selected_tab > 0) {
                     selected_tab--;
                     selected_item = 0; // Скидаємо вибір на початок нового підменю
-                    // Перемальовуємо панелі, щоб прибрати попереднє підменю
-                    int panel_width = (cols - 1) / 2;
-                    draw_panel(&left_panel, 1, panel_width, active_panel == &left_panel);
-                    draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
-                    for (int i = 2; i < rows - 2; i++) {
-                        printf("\x1b[%d;%dH│", i, panel_width + 1);
-                    }
-                }
-                if (c == KEY_RIGHT && selected_tab < tab_count - 1) {
+                } else if (c == KEY_RIGHT && selected_tab < tab_count - 1) {
                     selected_tab++;
                     selected_item = 0; // Скидаємо вибір на початок нового підменю
-                    // Перемальовуємо панелі, щоб прибрати попереднє підменю
-                    int panel_width = (cols - 1) / 2;
-                    draw_panel(&left_panel, 1, panel_width, active_panel == &left_panel);
-                    draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
-                    for (int i = 2; i < rows - 2; i++) {
-                        printf("\x1b[%d;%dH│", i, panel_width + 1);
-                    }
-                }
-                if (c == 27) {
+                } else if (c == 27) {
                     submenu_active = 0;
                     break; // Esc
                 }
+                draw_interface();
             }
         } else {
-            // Обробка введення в головному меню
+            printf(COLOR_TEXT);
             if (c == KEY_LEFT && selected_tab > 0) {
                 selected_tab--;
-                // Перемальовуємо панелі, щоб прибрати попереднє підменю
-                int panel_width = (cols - 1) / 2;
-                draw_panel(&left_panel, 1, panel_width, active_panel == &left_panel);
-                draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
-                for (int i = 2; i < rows - 2; i++) {
-                    printf("\x1b[%d;%dH│", i, panel_width + 1);
-                }
             } else if (c == KEY_RIGHT && selected_tab < tab_count - 1) {
                 selected_tab++;
-                // Перемальовуємо панелі, щоб прибрати попереднє підменю
-                int panel_width = (cols - 1) / 2;
-                draw_panel(&left_panel, 1, panel_width, active_panel == &left_panel);
-                draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
-                for (int i = 2; i < rows - 2; i++) {
-                    printf("\x1b[%d;%dH│", i, panel_width + 1);
-                }
             } else if (c == 13 || c == KEY_DOWN) {
                 submenu_active = 1;
                 selected_item = 0;
             } else if (c == 27) { // Esc
                 break;
             }
+            draw_interface();
         }
     }
     return 0;
