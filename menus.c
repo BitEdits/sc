@@ -475,7 +475,7 @@ int handle_menu() {
                 selected_item--;
             } else if (c == KEY_DOWN && selected_item < item_counts[selected_tab] - 1) {
                 selected_item++;
-            } else if (c == '\n') {
+            } else if (c == 13) {
                 // Виконуємо дію
                 if (selected_tab == 0) { // Left
                     if (selected_item == 0) { // Listing
@@ -559,7 +559,7 @@ int handle_menu() {
                 for (int i = 2; i < rows - 2; i++) {
                     printf("\x1b[%d;%dH│", i, panel_width + 1);
                 }
-            } else if (c == '\n' || c == KEY_DOWN) {
+            } else if (c == 13 || c == KEY_DOWN) {
                 submenu_active = 1;
                 selected_item = 0;
             } else if (c == 27) { // Esc
