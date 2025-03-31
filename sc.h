@@ -111,10 +111,12 @@ void execute_command(const char *cmd);
 void draw_interface();
 void update_cursor(Panel *panel, int start_col, int width, int is_active, int prev_cursor);
 void draw_panel(Panel *panel, int start_col, int width, int is_active);
-void draw_panel_border(int start_col, int width, int height);
+void draw_panel_border(int start_col, int start_row, int width, int height, char *color);
 void draw_exit_dialog();
 int handle_exit_dialog();
 void draw_menu();
+void draw_command_line();
+void draw_bottom_bar();
 int handle_menu();
 void append_to_history_display(const char *command, const char *output);
 

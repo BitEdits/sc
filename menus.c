@@ -2,29 +2,29 @@
 
 #include "sc.h"
 
-void draw_panel_border(int start_col, int width, int height) {
-    printf("%s", COLOR_TEXT);
+void draw_panel_border(int start_col, int start_row, int width, int height, char *color) {
+    if (color) printf(color);
+
     // Верхня рамка
-    printf("\x1b[2;%dH┌", start_col); // Start at row 2 to leave space for top menu
+    printf("\x1b[%d;%dH┌", start_row, start_col); // Start at row 2 to leave space for top menu
     for (int i = 0; i < width - 2; i++) printf("─");
     printf("┐");
 
     // Бокові рамки
-    for (int i = 0; i < height - 2; i++) {
-        printf("\x1b[%d;%dH│", 3 + i, start_col);
-        printf("\x1b[%d;%dH│", 3 + i, start_col + width - 1);
+    for (int i = start_row + 1; i < start_row + height - 1; i++) {
+        printf("\x1b[%d;%dH│", i, start_col);
+        printf("\x1b[%d;%dH│", i, start_col + width - 1);
     }
 
     // Нижня рамка
-    printf("\x1b[%d;%dH└", 1 + height, start_col);
+    printf("\x1b[%d;%dH└", start_row + height - 1, start_col);
     for (int i = 0; i < width - 2; i++) printf("─");
     printf("┘");
 }
 
 void draw_panel(Panel *panel, int start_col, int width, int is_active) {
-    int panel_height = rows - 4; // 1 row for top menu, 1 for command bar, 1 for bottom menu, 1 for padding
+    int panel_height = rows - 3; // 1 row for top menu, 1 for command bar, 1 for bottom menu, 1 for padding
     int visible_files = panel_height - 5; // 2 rows for borders, 1 for path, 1 for column headers, 1 for status bar
-
     // Оновлення прокручування
     if (panel->cursor < panel->scroll_offset) {
         panel->scroll_offset = panel->cursor;
@@ -33,7 +33,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     }
 
     // Малювання рамки
-    draw_panel_border(start_col, width, panel_height);
+    draw_panel_border(start_col, 2, width, panel_height, COLOR_TEXT);
 
     // Заголовок панелі (шлях)
     printf("\x1b[2;%dH%s %s ", start_col + 1, COLOR_HEADER, panel->path);
@@ -131,7 +131,6 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
     }
 
     // Сепаратори для регіонів
-
     int name_width = width - 4 - 23; // 65% для імені
     int size_width = 9 ; // 15% для розміру/типу
     int date_width = 14 ; // 20% для дати
@@ -176,12 +175,6 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
 }
 
 void append_to_history_display(const char *command, const char *output) {
-    struct timespec start, end;
-    double elapsed;
-
-    // Start timing
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
     int max_display = rows - 4; // Залишаємо місце для меню, командного рядка і нижнього меню
 
     // Збираємо лише видимі рядки історії
@@ -239,13 +232,8 @@ void append_to_history_display(const char *command, const char *output) {
         printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, "");
     }
 
-    // Оновлюємо командний рядок
-    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 2, cols, "");
-    printf("\x1b[37;40m\x1b[%d;1H%s%s>%s", rows - 2, COLOR_TEXT, active_panel->path, command_buffer);
-
-    // Оновлюємо нижнє меню
-    printf("\x1b[37;40m\x1b[%d;1H\x1b[1;37m\x1b[42m%-*s", rows - 1, cols, "");
-    printf("\x1b[37;40m\x1b[%d;1H\x1b[1;37m\x1b[42m↑1Help 2UserMn 3View 4Edit 5Copy 6RenMov 7MkFold 8Delete 9ConfMn 10Quit 11Plugin 12Screen%s", rows - 1, COLOR_RESET);
+    draw_command_line();
+    draw_bottom_bar();
 
     // Звільняємо пам’ять
     for (int i = 0; i < line_count; i++) {
@@ -262,7 +250,7 @@ void draw_interface() {
 
     if (show_command_buffer) {
         // Відображаємо історію команд і їх виводи
-        int max_display = rows - 4; // Залишаємо місце для меню, командного рядка і нижнього меню
+        int max_display = rows - 3; // Залишаємо місце для меню, командного рядка і нижнього меню
 
         // Збираємо всі рядки історії в один масив
         char *history_lines[16384];
@@ -314,13 +302,18 @@ void draw_interface() {
         draw_panel(&right_panel, panel_width + 2, panel_width, active_panel == &right_panel);
     }
 
+   draw_command_line();
+   draw_bottom_bar();
+}
+
+void draw_command_line() {
     // Командний рядок
-    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 2, cols, "");
-    printf("\x1b[37;40m\x1b[%d;1H%s>%s", rows - 2, active_panel->path, command_buffer);
+    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 1, cols, "");
+    printf("\x1b[37;40m\x1b[%d;1H%s>%s", rows - 1, active_panel->path, command_buffer);
+}
 
+void draw_bottom_bar() {
     // Нижнє меню
-//    printf("\x1b[%d;1H\x1b[1;37m\x1b[42m%-*s", rows - 1, cols, "");
-
     printf("\x1b[%d;1H\x1b[37m\x1b[44m↑"
            "\x1b[37;40m 1\x1b[90;106mHelp "
            "\x1b[37;40m 2\x1b[90;106mUser "
@@ -333,7 +326,7 @@ void draw_interface() {
            "\x1b[37;40m 9\x1b[90;106mMenu "
            "\x1b[37;40m 10\x1b[90;106mQuit "
            "\x1b[37;40m 11\x1b[90;106mPlugin "
-           "\x1b[37;40m 12\x1b[90;106mScreen%s", rows - 1, COLOR_RESET);
+           "\x1b[37;40m 12\x1b[90;106mScreen%s", rows, COLOR_RESET);
 }
 
 void draw_menu() {
@@ -355,24 +348,10 @@ void draw_menu() {
 void draw_submenu(const char *items[], int item_count, int start_row, int start_col, int selected) {
     int width = 36; // Фіксована ширина підменю
     int height = item_count + 2;
+    char *color = "\x1b[96;46m";
 
-    // Малюємо рамку
-    printf("\x1b[96;46m");
+    draw_panel_border(start_col, 2, width, height, color);
 
-    printf("\x1b[%d;%dH┌", start_row, start_col);
-    for (int i = 0; i < width - 2; i++) printf("─");
-    printf("┐");
-
-    for (int i = 0; i < height - 2; i++) {
-        printf("\x1b[%d;%dH│", start_row + 1 + i, start_col);
-        printf("\x1b[%d;%dH│", start_row + 1 + i, start_col + width - 1);
-    }
-
-    printf("\x1b[%d;%dH└", start_row + height - 1, start_col);
-    for (int i = 0; i < width - 2; i++) printf("─");
-    printf("┘");
-
-    // Відображаємо пункти підменю
     for (int i = 0; i < item_count; i++) {
         if (i == selected) {
             printf("\x1b[%d;%dH\x1b[90;47m%-*s", start_row + 1 + i, start_col + 1, width - 2, items[i]);
@@ -554,19 +533,7 @@ void draw_exit_dialog(int selected_button) {
     }
 
     // Малюємо тонку рамку магентового кольору
-    printf("%s", COLOR_MAGENTA);
-    printf("\x1b[%d;%dH┌", start_row, start_col);
-    for (int i = 0; i < dialog_width - 2; i++) printf("─");
-    printf("┐");
-
-    for (int i = 0; i < dialog_height - 2; i++) {
-        printf("\x1b[%d;%dH│", start_row + 1 + i, start_col);
-        printf("\x1b[%d;%dH│", start_row + 1 + i, start_col + dialog_width - 1);
-    }
-
-    printf("\x1b[%d;%dH└", start_row + dialog_height - 1, start_col);
-    for (int i = 0; i < dialog_width - 2; i++) printf("─");
-    printf("┘");
+    draw_panel_border(start_col, start_row, dialog_width, dialog_height, COLOR_MAGENTA);
 
     // Текст (білий колір)
     printf("%s", COLOR_WHITE);
