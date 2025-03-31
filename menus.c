@@ -315,18 +315,16 @@ void draw_command_line() {
 void draw_bottom_bar() {
     // Нижнє меню
     printf("\x1b[%d;1H\x1b[37m\x1b[44m∀ "
-           "\x1b[37;40m 1\x1b[90;106mHelp"
-           "\x1b[37;40m 2\x1b[90;106mUser"
-           "\x1b[37;40m 3\x1b[90;106mView"
-           "\x1b[37;40m 4\x1b[90;106mEdit"
-           "\x1b[37;40m 5\x1b[90;106mCopy"
-           "\x1b[37;40m 6\x1b[90;106mMove"
-           "\x1b[37;40m 7\x1b[90;106mMake"
-           "\x1b[37;40m 8\x1b[90;106mDelete"
-           "\x1b[37;40m 9\x1b[90;106mMenu"
-           "\x1b[37;40m 10\x1b[90;106mExit"
-           "\x1b[37;40m 11\x1b[90;106mPlugin "
-           "\x1b[37;40m 12\x1b[90;106mScreen%s", rows, COLOR_RESET);
+           "\x1b[37;40m 1\x1b[90;106m Help "
+           "\x1b[37;40m 2\x1b[90;106m User "
+           "\x1b[37;40m 3\x1b[90;106m View "
+           "\x1b[37;40m 4\x1b[90;106m Edit "
+           "\x1b[37;40m 5\x1b[90;106m Copy "
+           "\x1b[37;40m 6\x1b[90;106m Move "
+           "\x1b[37;40m 7\x1b[90;106m Make "
+           "\x1b[37;40m 8\x1b[90;106m Delete "
+           "\x1b[37;40m 9\x1b[90;106m Menu "
+           "\x1b[37;40m10\x1b[90;106m Exit %s", rows, COLOR_RESET);
 }
 
 void draw_menu() {
@@ -463,6 +461,7 @@ int handle_menu() {
                         disable_raw_mode();
                         system(cmd);
                         enable_raw_mode();
+                        return 0;
                     } else if (selected_item == 9) { // Exit (F10)
                         if (handle_exit_dialog()) {
                            printf("\x1b[?1049l");
