@@ -122,7 +122,6 @@ int main() {
         if (resize_flag) {
             get_window_size(&rows, &cols);
             resize_flag = 0;
-//            draw_interface();
         }
 
         int c = get_input();
@@ -245,7 +244,7 @@ int main() {
             if (cmd_cursor_pos < strlen(command_buffer)) {
                 cmd_cursor_pos++;
                 if (cmd_cursor_pos >= cmd_display_offset + cols - 4) cmd_display_offset = cmd_cursor_pos - (cols - 4) + 1;
-                draw_interface();
+                draw_command_line();
             }
         } else if (c == KEY_RIGHT && !show_command_buffer && command_buffer[0] == 0) {
             if (active_panel->files[active_panel->cursor].is_dir)
@@ -261,18 +260,13 @@ int main() {
                 char new_path[1024*8];
                 snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 strcpy(active_panel->path, new_path);
-
                 char normalized_path[1024 * 8];
-
 #ifdef _WIN32
-    _fullpath(normalized_path, active_panel->path, sizeof(normalized_path));
+                _fullpath(normalized_path, active_panel->path, sizeof(normalized_path));
 #else
-    realpath(active_panel->path, normalized_path);
+                realpath(active_panel->path, normalized_path);
 #endif
-
-//                realpath(active_panel->path, normalized_path);  // Resolve ".." and symbolic links
                 strcpy(active_panel->path, normalized_path);
-
                 active_panel->cursor = 0;
                 active_panel->scroll_offset = 0;
                 load_files(active_panel);
@@ -283,7 +277,7 @@ int main() {
             if (cmd_cursor_pos > 0) {
                 cmd_cursor_pos--;
                 if (cmd_cursor_pos < cmd_display_offset) cmd_display_offset = cmd_cursor_pos;
-                draw_interface();
+                draw_command_line();
             }
         } else if (c == KEY_LEFT && !show_command_buffer && command_buffer[0] == 0) { // Вихід із директорії (Lynx-подібна навігація)
             if (strcmp(active_panel->path, "/") != 0) { // Не корінь
@@ -412,7 +406,7 @@ int main() {
             int len = strlen(command_buffer);
             if (cmd_cursor_pos < len) {
                 memmove(&command_buffer[cmd_cursor_pos], &command_buffer[cmd_cursor_pos + 1], len - cmd_cursor_pos);
-                draw_interface();
+                draw_command_line();
             }
         } else if (c == KEY_INSERT) {
             insert_mode = !insert_mode;
@@ -421,7 +415,7 @@ int main() {
             if (cmd_cursor_pos > 0) {
                 memmove(&command_buffer[cmd_cursor_pos - 1], &command_buffer[cmd_cursor_pos], len - cmd_cursor_pos + 1);
                 cmd_cursor_pos--;
-                draw_interface();
+                draw_command_line();
             }
         } else if (c >= 32 && c <= 126) { // Друковані символи
             int len = strlen(command_buffer);
@@ -436,7 +430,7 @@ int main() {
                     if (cmd_cursor_pos == len) command_buffer[cmd_cursor_pos + 1] = 0; // Null terminate if at end
                 }
                 cmd_cursor_pos++;
-                draw_interface();
+                draw_command_line();
             }
 /*
             {
@@ -444,7 +438,7 @@ int main() {
                 command_buffer[len] = c;
                 printf("\x1b[%d;%ldH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
                 cmd_cursor_pos++;
-                draw_interface();
+                draw_command_line();
             }
 */
         } else if (c == KEY_F3) { // F3 (View)
