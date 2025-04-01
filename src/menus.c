@@ -318,7 +318,7 @@ void draw_command_line() {
     if (show_command_buffer && command_buffer[0] != 0) {
         int cursor_offset = cmd_cursor_pos - start + 3;
         if (cursor_offset >= 0) {
-            printf("\x1b[%d;%dH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
+            printf("\x1b[%d;%ldH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
         }
     }
 
