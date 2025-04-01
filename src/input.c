@@ -171,9 +171,11 @@ void execute_command(const char *cmd) {
 }
 
 void finalize_exec(const char *cmd) {
-    command_copy = strdup(cmd);
-    output_copy = strdup(output);
+    // Use temporary variables to store command and output copies
+    char *command_copy = strdup(cmd);
+    char *output_copy = strdup(output);
 
+    // Store in history at current start position
     if (command_copy && output_copy) {
         strncpy(history[history_start].command, command_copy, sizeof(history[history_start].command) - 1);
         history[history_start].command[sizeof(history[history_start].command) - 1] = '\0';
@@ -185,11 +187,17 @@ void finalize_exec(const char *cmd) {
         strncpy(history[history_start].output, "Error: Memory allocation failed", sizeof(history[history_start].output) - 1);
         history[history_start].output[sizeof(history[history_start].output) - 1] = '\0';
     }
+
     free(command_copy);
     free(output_copy);
 
+    // Update circular buffer state
     history_start = (history_start + 1) % MAX_HISTORY;
-    if (history_count < MAX_HISTORY) history_count++;
+    if (history_count < MAX_HISTORY) {
+        history_count++;
+    }
+
+    // Append to display (this will handle the latest command/output pair)
     append_to_history_display(cmd, output);
 }
 

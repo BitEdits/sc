@@ -176,67 +176,49 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
 }
 
 void append_to_history_display(const char *command, const char *output) {
-    int max_display = rows - 4; // Залишаємо місце для меню, командного рядка і нижнього меню
-
-    // Збираємо лише видимі рядки історії
-    char *history_lines[16384*4];
+    int max_display = rows - 4; // Space for menu, command line, and bottom bar
+    char *history_lines[MAX_HISTORY * 10]; // Allow enough lines for multiline outputs
     int line_count = 0;
 
-    // Визначаємо, з якого рядка історії починати відображення
-    int start_idx = history_count - max_display - history_display_offset;
-    if (start_idx < 0) start_idx = 0;
+    // Calculate the starting index in the circular buffer
+    int start_idx = (history_count > max_display) ? (history_start - max_display + MAX_HISTORY) % MAX_HISTORY : 0;
+    int items_to_show = (history_count < max_display) ? history_count : max_display;
 
-    for (int i = start_idx; i < history_count && line_count < 16384; i++) {
-        int idx = (history_start - history_count + i + MAX_HISTORY) % MAX_HISTORY;
-        if (i == history_count - 1) {
-            // Для останньої команди використовуємо передані command і output
-            char command_line[1024*3];
-            snprintf(command_line, sizeof(command_line), "> %s", command);
-            history_lines[line_count] = strdup(command_line);
+    for (int i = 0; i < items_to_show && line_count < MAX_HISTORY * 10; i++) {
+        int idx = (start_idx + i) % MAX_HISTORY;
+
+        // Add command line
+        char command_line[1024 * 3];
+        snprintf(command_line, sizeof(command_line), "> %s", (i == items_to_show - 1) ? command : history[idx].command);
+        history_lines[line_count] = strdup(command_line);
+        line_count++;
+
+        // Add output lines
+        char output_copy[16384 * 4];
+        strncpy(output_copy, (i == items_to_show - 1) ? output : history[idx].output, sizeof(output_copy) - 1);
+        output_copy[sizeof(output_copy) - 1] = '\0';
+        char *line = strtok(output_copy, "\n");
+        while (line && line_count < MAX_HISTORY * 10) {
+            history_lines[line_count] = strdup(line);
             line_count++;
-
-            char output_copy[16384*4];
-            strncpy(output_copy, output, sizeof(output_copy) - 1);
-            output_copy[sizeof(output_copy) - 1] = 0;
-            char *line = strtok(output_copy, "\n");
-            while (line && line_count < 16384) {
-                history_lines[line_count] = strdup(line);
-                line_count++;
-                line = strtok(NULL, "\n");
-            }
-        } else {
-            // Для попередніх команд використовуємо збережені дані
-            char command_line[1024*3];
-            snprintf(command_line, sizeof(command_line), "> %s", history[idx].command);
-            history_lines[line_count] = strdup(command_line);
-            line_count++;
-
-            char output_copy[16384*4];
-            strncpy(output_copy, history[idx].output, sizeof(output_copy) - 1);
-            output_copy[sizeof(output_copy) - 1] = 0;
-            char *line = strtok(output_copy, "\n");
-            while (line && line_count < 16384) {
-                history_lines[line_count] = strdup(line);
-                line_count++;
-                line = strtok(NULL, "\n");
-            }
+            line = strtok(NULL, "\n");
         }
     }
 
-    // Відображаємо лише видимі рядки
+    // Display visible lines
     for (int i = 0; i < max_display && i < line_count; i++) {
         printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, history_lines[i]);
     }
 
-    // Очищаємо залишок екрана
+    // Clear remaining screen space
     for (int i = line_count; i < max_display; i++) {
-        printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols - 2, "");
+        printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, "");
     }
 
     draw_command_line();
     draw_bottom_bar();
 
-    // Звільняємо пам’ять
+    // Free allocated memory
     for (int i = 0; i < line_count; i++) {
         free(history_lines[i]);
     }

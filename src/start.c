@@ -320,13 +320,10 @@ int main() {
             command_buffer[0] = 0;
             draw_interface();
         } else if (c == '\n') { // Enter
-            if (command_buffer[0] != 0) { // Виконання команди
-                show_command_buffer = 1; // Переходимо в режим Ctrl+O
-                char cmd_copy[1024*3];
-                strcpy(cmd_copy, command_buffer);
-                execute_command(command_buffer);
-                append_to_history_display(cmd_copy, history[(history_start - 1 + MAX_HISTORY) % MAX_HISTORY].output);
-                history_scroll_pos = history_count; // Скидаємо позицію прокручування
+            if (command_buffer[0] != 0) {
+                show_command_buffer = 1;
+                execute_command(command_buffer); // This will update history and call append_to_history_display
+                history_scroll_pos = history_count; // Reset scroll position
                 command_buffer[0] = 0;
                 draw_interface();
             } else if (!show_command_buffer) { // Відкриття теки
