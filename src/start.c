@@ -399,7 +399,7 @@ int main() {
                     draw_interface();
                 }
             }
-        } else if (c == KEY_DELETE && show_command_buffer && command_buffer[0] != 0) { // Delete
+        } else if (c == KEY_DELETE && command_buffer[0] != 0) { // Delete
             int len = strlen(command_buffer);
             if (cmd_cursor_pos < len) {
                 memmove(&command_buffer[cmd_cursor_pos], &command_buffer[cmd_cursor_pos + 1], len - cmd_cursor_pos);

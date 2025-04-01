@@ -300,8 +300,8 @@ void draw_interface() {
         draw_panel(&right_panel, panel_width + 1, panel_width, active_panel == &right_panel);
     }
 
-   draw_command_line();
    draw_bottom_bar();
+   draw_command_line();
 }
 
 void draw_command_line() {
@@ -320,16 +320,9 @@ void draw_command_line() {
     if (end < len) printf(" >>");
 
     // Draw the cursor at cmd_cursor_pos (underline or invert)
-    if (show_command_buffer) {
-        int cursor_screen_pos = strlen(active_panel->path) + 2 + (cmd_cursor_pos - start);
-        if (cmd_cursor_pos >= start && cmd_cursor_pos < end) { // Only if cursor is in visible range
-            printf("\x1b[%d;%dH\x1b[7m%c\x1b[0m", rows - 1, cursor_screen_pos + 1, command_buffer[cmd_cursor_pos]);
-        }
-
-        // Draw inverted box at the end of the visible input string
-        int text_end_pos = strlen(active_panel->path) + 2 + (end - start);
-        if (cmd_cursor_pos == len)
-            printf("\x1b[%d;%dH\x1b[7m \x1b[0m", rows - 1, text_end_pos + 1); // Inverted box
+    int cursor_screen_pos = strlen(active_panel->path) + 2 + (cmd_cursor_pos - start);
+    if (cmd_cursor_pos >= start && cmd_cursor_pos < end) { // Only if cursor is in visible range
+        printf("\x1b[%d;%dH\x1b[7m%c\x1b[0m", rows - 1, cursor_screen_pos + 1, command_buffer[cmd_cursor_pos]);
     }
 }
 
