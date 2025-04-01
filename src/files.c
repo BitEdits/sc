@@ -31,7 +31,7 @@ void load_files(Panel *panel) {
         strcpy(panel->path, "C:/"); // Use C:/ as the default root
     }
     // Convert forward slashes to backslashes for Windows
-    char win_path[1024];
+    char win_path[1024*8];
     strcpy(win_path, panel->path);
     for (char *p = win_path; *p; p++) {
         if (*p == '/') *p = '\\';
