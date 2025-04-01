@@ -318,7 +318,7 @@ int main() {
                 draw_command_line();
             }
         } else if (c == KEY_LEFT && !show_command_buffer && command_buffer[0] == 0) { // Вихід із директорії (Lynx-подібна навігація)
-
+/*
             if (active_panel->files[active_panel->cursor].is_dir)
             {
 
@@ -336,7 +336,7 @@ int main() {
                 draw_interface();
             }
 
-/*
+*/
             if (strcmp(active_panel->path, "/") != 0) { // Не корінь
                 // Зберігаємо поточний шлях для порівняння
                 char current_path[1024*8];
@@ -369,7 +369,7 @@ int main() {
                 chdir(active_panel->path);
                 draw_interface();
             }
-*/
+
         } else if (c == KEY_HOME) { // Home
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
                 history_display_offset = 0;
