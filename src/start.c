@@ -449,7 +449,8 @@ int main() {
                 draw_interface();
             }
         } else if (c == KEY_F9) { // F9 (Menu)
-            if (!show_command_buffer) {
+//          if (!show_command_buffer) {
+            {
                 int result = handle_menu();
                 if (result == 1) break; // Сигнал для виходу
                 draw_interface();
