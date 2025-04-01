@@ -316,8 +316,8 @@ void draw_command_line() {
     printf("\x1b[37;40m\x1b[%d;1H%s> %.*s", rows - 1, active_panel->path, end - start, command_buffer + start);
 
     // Add scroll indicators if applicable
-    if (start > 0) printf("<< ");
-    if (end < len) printf(" >>");
+    if (end < len) printf(">>");
+    if (start > 0) printf("\x1b[%d;%dH<<", rows - 1, 2);
 
     // Draw the cursor at cmd_cursor_pos (underline or invert)
     int cursor_screen_pos = strlen(active_panel->path) + 2 + (cmd_cursor_pos - start);
