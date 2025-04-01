@@ -418,7 +418,7 @@ int main() {
             {
                 int len = cmd_cursor_pos;
                 command_buffer[len] = c;
-                command_buffer[len + 1] = 0;
+                printf("\x1b[%d;%ldH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
                 cmd_cursor_pos++;
                 draw_interface();
             }
