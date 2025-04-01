@@ -60,6 +60,7 @@ void enable_raw_mode() {
     tcgetattr(STDIN_FILENO, &orig_termios);
     raw = orig_termios;
     raw.c_lflag &= ~(ICANON | ECHO | IEXTEN);
+    raw.c_iflag &= ~(IXON);
     raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);

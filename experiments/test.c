@@ -7,7 +7,8 @@ int main() {
     int ch;
     tcgetattr(STDIN_FILENO, &old);
     raw = old;
-    raw.c_lflag &= ~(ICANON | ECHO | ISIG | IEXTEN); // Enable CTRL-O for Sokhatsky Commander
+    raw.c_lflag &= ~(ICANON | ECHO | IEXTEN); // Enable CTRL-O for Sokhatsky Commander
+    raw.c_iflag &= ~(IXON);
     tcsetattr(STDIN_FILENO, TCSANOW, &raw);
     printf("Press Ctrl+C to exit...\n");
     while (1) {
