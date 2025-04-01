@@ -1,3 +1,4 @@
+
 // start.c
 
 #include "socha.h"
@@ -78,6 +79,80 @@ int get_window_size(int *r, int *c) {
 
 void handle_resize(int sig) {
     resize_flag = 1;
+}
+
+void left_windows(Panel *active_panel) {
+    if (strcmp(active_panel->path, "/") != 0 && strcmp(active_panel->path, "C:/") != 0) { // Not root
+                char current_path[1024 * 8];
+                strcpy(current_path, active_panel->path);
+
+    // Replace forward slashes with backslashes for Windows compatibility
+    for (char *p = active_panel->path; *p; p++) {
+        if (*p == '/') *p = '\\';
+    }
+
+    char *last_slash = strrchr(active_panel->path, '\\');
+    char dir_name[256 * 10];
+    if (last_slash && last_slash != active_panel->path) { // Valid non-root slash
+        strcpy(dir_name, last_slash + 1);
+        *last_slash = 0; // Truncate to parent directory
+    } else { // At drive root (e.g., "C:/")
+        strcpy(dir_name, active_panel->path + 3); // Skip "C:/"
+        strcpy(active_panel->path, "C:/"); // Set to root
+    }
+
+    chdir(active_panel->path);
+    load_files(active_panel);
+
+    // Restore cursor position from history
+    for (int i = active_panel->dir_history_count - 1; i >= 0; i--) {
+        DirHistory *dh = &active_panel->dir_history[i];
+        if (strcmp(dh->parent_path, active_panel->path) == 0 && strcmp(dh->dir_name, dir_name) == 0) {
+            active_panel->cursor = dh->cursor_pos;
+            active_panel->scroll_offset = active_panel->cursor - (rows - 4 - 2) / 2;
+            if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
+            active_panel->dir_history_count--;
+        }
+    }
+
+    draw_interface();
+
+   }
+}
+
+void left_unix(Panel *active_panel) {
+    if (strcmp(active_panel->path, "/") != 0) { // Не корінь
+                // Зберігаємо поточний шлях для порівняння
+                char current_path[1024*3];
+                strcpy(current_path, active_panel->path);
+
+                char *last_slash = strrchr(active_panel->path, '/');
+                char dir_name[256];
+                if (last_slash != active_panel->path) { // Не кореневий слеш
+                    strcpy(dir_name, last_slash + 1);
+                    *last_slash = 0; // Обрізаємо шлях до батьківської директорії
+                } else {
+                    strcpy(dir_name, last_slash + 1);
+                    active_panel->path[1] = 0; // Залишаємо тільки "/"
+                }
+
+                // Завантажуємо файли в батьківській директорії
+                load_files(active_panel);
+
+                // Відновлюємо позицію курсору з історії
+                for (int i = active_panel->dir_history_count - 1; i >= 0; i--) {
+                    DirHistory *dh = &active_panel->dir_history[i];
+                    if (strcmp(dh->parent_path, active_panel->path) == 0 && strcmp(dh->dir_name, dir_name) == 0) {
+                        active_panel->cursor = dh->cursor_pos;
+                        active_panel->scroll_offset = active_panel->cursor - (rows - 4 - 2) / 2;
+                        if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
+                        active_panel->dir_history_count--;
+                        break;
+                    }
+                }
+                chdir(active_panel->path);
+                draw_interface();
+    }
 }
 
 void normalize(Panel *active_panel) {
@@ -264,7 +339,6 @@ int main() {
         } else if (c == KEY_RIGHT && !show_command_buffer && command_buffer[0] == 0) {
             if (active_panel->files[active_panel->cursor].is_dir)
             {
-
                 if (active_panel->dir_history_count < MAX_FILES) {
                     DirHistory *dh = &active_panel->dir_history[active_panel->dir_history_count];
                     strcpy(dh->parent_path, active_panel->path);
@@ -285,45 +359,11 @@ int main() {
                 draw_command_line();
             }
         } else if (c == KEY_LEFT && !show_command_buffer && command_buffer[0] == 0) { // Вихід із директорії (Lynx-подібна навігація)
-            if (strcmp(active_panel->path, "/") != 0 && strcmp(active_panel->path, "C:/") != 0) { // Not root
-                char current_path[1024 * 8];
-                strcpy(current_path, active_panel->path);
-
-    // Replace forward slashes with backslashes for Windows compatibility
-    for (char *p = active_panel->path; *p; p++) {
-        if (*p == '/') *p = '\\';
-    }
-
-    char *last_slash = strrchr(active_panel->path, '\\');
-    char dir_name[256 * 10];
-    if (last_slash && last_slash != active_panel->path) { // Valid non-root slash
-        strcpy(dir_name, last_slash + 1);
-        *last_slash = 0; // Truncate to parent directory
-    } else { // At drive root (e.g., "C:/")
-        strcpy(dir_name, active_panel->path + 3); // Skip "C:/"
-        strcpy(active_panel->path, "C:/"); // Set to root
-    }
-
-    chdir(active_panel->path);
-    load_files(active_panel);
-
-    // Restore cursor position from history
-    for (int i = active_panel->dir_history_count - 1; i >= 0; i--) {
-        DirHistory *dh = &active_panel->dir_history[i];
-        if (strcmp(dh->parent_path, active_panel->path) == 0 && strcmp(dh->dir_name, dir_name) == 0) {
-            active_panel->cursor = dh->cursor_pos;
-            active_panel->scroll_offset = active_panel->cursor - (rows - 4 - 2) / 2;
-            if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
-            active_panel->dir_history_count--;
-        }
-    }
-
-    draw_interface();
-
-}
-
-
-
+#ifdef _WIN32
+            left_windows(active_panel);
+#else
+            left_unix(active_panel);
+#endif
         } else if (c == KEY_HOME) { // Home
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
                 history_display_offset = 0;
@@ -361,7 +401,6 @@ int main() {
                 draw_interface();
             } else if (!show_command_buffer) { // Відкриття теки
                 if (active_panel->files[active_panel->cursor].is_dir) {
-
                     if (active_panel->dir_history_count < MAX_FILES) {
                         DirHistory *dh = &active_panel->dir_history[active_panel->dir_history_count];
                         strcpy(dh->parent_path, active_panel->path);
