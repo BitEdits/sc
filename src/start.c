@@ -19,7 +19,7 @@ int max_display = 0;
 int cmd_cursor_pos = 0;
 int cmd_display_offset = 0;
 int insert_mode = 1; // 1 = insert, 0 = overwrite
-/*
+
 #ifdef _WIN32
 
 HANDLE hStdin;
@@ -49,7 +49,7 @@ int get_window_size(int *rows, int *cols) {
 }
 
 #else
-*/
+
 struct termios orig_termios;
 
 void disable_raw_mode() {
@@ -74,7 +74,7 @@ int get_window_size(int *r, int *c) {
     *c = ws.ws_col;
 }
 
-//#endif
+#endif
 
 void handle_resize(int sig) {
     resize_flag = 1;
