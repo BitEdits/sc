@@ -149,6 +149,8 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         char size_str[16];
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
+        } else if (panel->files[prev_cursor].is_link) {
+            snprintf(size_str, sizeof(size_str), "<link>");
         } else if (panel->files[prev_cursor].is_dir) {
             snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
@@ -166,6 +168,8 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
         char size_str[16];
         if (strcmp(name, "..") == 0) {
             snprintf(size_str, sizeof(size_str), "Up");
+        } else if (panel->files[panel->cursor].is_link) {
+            snprintf(size_str, sizeof(size_str), "<link>");
         } else if (panel->files[panel->cursor].is_dir) {
             snprintf(size_str, sizeof(size_str), "<dir>");
         } else {
