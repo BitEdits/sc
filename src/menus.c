@@ -505,14 +505,18 @@ int handle_menu() {
                 if (c == KEY_LEFT && selected_tab > 0) {
                     selected_tab--;
                     selected_item = 0; // Скидаємо вибір на початок нового підменю
+                    draw_interface();
                 } else if (c == KEY_RIGHT && selected_tab < tab_count - 1) {
                     selected_tab++;
                     selected_item = 0; // Скидаємо вибір на початок нового підменю
+                    draw_interface();
                 } else if (c == KEY_ESC) {
                     submenu_active = 0;
                     break; // Esc
+                    draw_interface();
+                } else {
+                    //
                 }
-                draw_interface();
             }
         } else {
             printf(COLOR_TEXT);
