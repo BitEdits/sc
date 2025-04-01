@@ -201,6 +201,7 @@ void finalize_exec(const char *cmd) {
 
     // Append to display (this will handle the latest command/output pair)
     append_to_history_display(cmd, output);
+    command_buffer[0] = 0;
 }
 
 int get_input() {
@@ -215,6 +216,7 @@ int get_input() {
             if (c3 == 'D') return KEY_LEFT;  // Left
             if (c3 == 'H') return KEY_HOME;  // Home
             if (c3 == 'F') return KEY_END;   // End
+            if (c3 == '3' && getchar() == '~') return KEY_DELETE;
             if (c3 == '5') { // PgUp
                 getchar(); // ~
                 return KEY_PGUP;

@@ -300,9 +300,28 @@ void draw_interface() {
 
 void draw_command_line() {
     // Командний рядок
-    int panel_width = (cols - 1) / 2; // 1 для роздільника
-    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 1, panel_width * 2, "");
-    printf("\x1b[37;40m\x1b[%d;1H%s>%s", rows - 1, active_panel->path, command_buffer);
+    int visible_cols = cols - 4 - strlen(active_panel->path); // "> " and padding
+    int len = strlen(command_buffer);
+    int start = cmd_display_offset;
+    int end = start + visible_cols;
+    if (end > len) end = len;
+
+    printf("\x1b[37;40m\x1b[%d;1H", rows - 1);
+    if (start > 0) printf("<< ");
+    printf("> %.*s", end - start, command_buffer + start);
+    if (end < len) printf(" >>");
+
+    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 1, cols - 2, "");
+    printf("\x1b[37;40m\x1b[%d;1H%s>%s ", rows - 1, active_panel->path, command_buffer);
+
+    // Show cursor with underline in command mode
+    if (show_command_buffer && command_buffer[0] != 0) {
+        int cursor_offset = cmd_cursor_pos - start + 3;
+        if (cursor_offset >= 0) {
+            printf("\x1b[%d;%dH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
+        }
+    }
+
 }
 
 void draw_bottom_bar() {

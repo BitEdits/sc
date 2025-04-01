@@ -122,6 +122,10 @@ extern int history_display_offset; // Зміщення для відображе
 extern int total_lines;
 extern int max_display;
 
+// Read Line функціональність
+extern int cmd_cursor_pos; // Cursor position in command buffer
+extern int cmd_display_offset; // Horizontal scroll offset for long lines
+
 // Функції з input.c
 int get_input();
 void execute_command(const char *cmd);
