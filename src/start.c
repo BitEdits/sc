@@ -18,6 +18,7 @@ int total_lines = 0;
 int max_display = 0;
 int cmd_cursor_pos = 0;
 int cmd_display_offset = 0;
+int insert_mode = 1; // 1 = insert, 0 = overwrite
 
 #ifdef _WIN32
 
@@ -399,22 +400,36 @@ int main() {
                 }
             }
         } else if (c == KEY_DELETE && show_command_buffer && command_buffer[0] != 0) { // Delete
-            if (cmd_cursor_pos < strlen(command_buffer)) {
-                memmove(&command_buffer[cmd_cursor_pos], &command_buffer[cmd_cursor_pos + 1], strlen(command_buffer) - cmd_cursor_pos);
+            int len = strlen(command_buffer);
+            if (cmd_cursor_pos < len) {
+                memmove(&command_buffer[cmd_cursor_pos], &command_buffer[cmd_cursor_pos + 1], len - cmd_cursor_pos);
                 draw_interface();
             }
+        } else if (c == KEY_INSERT) {
+            insert_mode = !insert_mode;
         } else if (c == 127) { // Backspace
-            if (strlen(command_buffer) > 0) {
-                command_buffer[strlen(command_buffer) - 1] = 0;
+            int len = strlen(command_buffer);
+            if (cmd_cursor_pos > 0) {
+                memmove(&command_buffer[cmd_cursor_pos - 1], &command_buffer[cmd_cursor_pos], len - cmd_cursor_pos + 1);
                 cmd_cursor_pos--;
-                if (cmd_cursor_pos < 0) {
-                   memset(command_buffer, 0, sizeof(command_buffer));
-                   cmd_cursor_pos = 0;
-                   command_buffer[0] = 0;
-                }
                 draw_interface();
             }
         } else if (c >= 32 && c <= 126) { // Друковані символи
+            int len = strlen(command_buffer);
+            if (len < sizeof(command_buffer) - 1) { // Ensure space in buffer
+                if (insert_mode) {
+                    // Insert mode: shift characters right
+                    memmove(&command_buffer[cmd_cursor_pos + 1], &command_buffer[cmd_cursor_pos], len - cmd_cursor_pos + 1);
+                    command_buffer[cmd_cursor_pos] = c;
+                } else {
+                    // Overwrite mode: replace character
+                    command_buffer[cmd_cursor_pos] = c;
+                    if (cmd_cursor_pos == len) command_buffer[cmd_cursor_pos + 1] = 0; // Null terminate if at end
+                }
+                cmd_cursor_pos++;
+                draw_interface();
+            }
+/*
             {
                 int len = cmd_cursor_pos;
                 command_buffer[len] = c;
@@ -422,6 +437,7 @@ int main() {
                 cmd_cursor_pos++;
                 draw_interface();
             }
+*/
         } else if (c == KEY_F3) { // F3 (View)
             if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
                 char cmd[1024*8];

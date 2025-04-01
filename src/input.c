@@ -251,6 +251,7 @@ int get_input() {
                 } else if (c3 == '2') {
                     if (c4 == '0') { getchar(); return KEY_F9; }  // F9: \033[20~
                     if (c4 == '1') { getchar(); return KEY_F10; } // F10: \033[21~
+                    if (c4 == '~') { return KEY_INSERT; } // F10: \033[21~
                 }
             }
         } else if (c2 == 'O') {

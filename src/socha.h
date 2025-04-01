@@ -60,13 +60,14 @@
 
 #define KEY_CTRL_LEFT                1018
 #define KEY_CTRL_RIGHT               1019
-#define KEY_DELETE                   1020
-#define KEY_CTRL_ENTER               1021
-#define KEY_SHIFT_LEFT               1022
-#define KEY_SHIFT_RIGHT              1023
-#define KEY_ESC_SHIFT_ENTER          1024
-#define KEY_ESC_SHIFT_LEFT_BRACKET   1025
-#define KEY_ESC_SHIFT_RIGHT_BRACKET  1026
+#define KEY_INSERT                   1020
+#define KEY_DELETE                   1021
+#define KEY_CTRL_ENTER               1022
+#define KEY_SHIFT_LEFT               1023
+#define KEY_SHIFT_RIGHT              1024
+#define KEY_ESC_SHIFT_ENTER          1025
+#define KEY_ESC_SHIFT_LEFT_BRACKET   1026
+#define KEY_ESC_SHIFT_RIGHT_BRACKET  1027
 
 #define MAX_FILES   1000 // Максимальна кількість файлів у директорії
 #define MAX_HISTORY 1000 // Максимальна кількість команд в історії
@@ -122,6 +123,7 @@ extern int history_scroll_pos; // Позиція прокручування іс
 extern int history_display_offset; // Зміщення для відображення історії (для скролінгу)
 extern int total_lines;
 extern int max_display;
+extern int insert_mode; // 1 = insert, 0 = overwrite
 
 // Read Line функціональність
 extern int cmd_cursor_pos; // Cursor position in command buffer

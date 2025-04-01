@@ -230,8 +230,8 @@ void append_to_history_display(const char *command, const char *output) {
         printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, "");
     }
 
-    draw_command_line();
     draw_bottom_bar();
+    draw_command_line();
 
     // Free allocated memory
     for (int i = 0; i < line_count; i++) {
@@ -305,29 +305,32 @@ void draw_interface() {
 }
 
 void draw_command_line() {
-    // Командний рядок
     int visible_cols = cols - 4 - strlen(active_panel->path); // "> " and padding
     int len = strlen(command_buffer);
     int start = cmd_display_offset;
     int end = start + visible_cols;
     if (end > len) end = len;
 
-    printf("\x1b[37;40m\x1b[%d;1H", rows - 1);
+    // Clear the line and draw the prompt and visible command buffer
+    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 1, cols - 2, ""); // Clear entire line
+    printf("\x1b[37;40m\x1b[%d;1H%s> %.*s", rows - 1, active_panel->path, end - start, command_buffer + start);
+
+    // Add scroll indicators if applicable
     if (start > 0) printf("<< ");
-    printf("> %.*s", end - start, command_buffer + start);
     if (end < len) printf(" >>");
 
-    printf("\x1b[37;40m\x1b[%d;1H%-*s", rows - 1, cols - 2, "");
-    printf("\x1b[37;40m\x1b[%d;1H%s>%s ", rows - 1, active_panel->path, command_buffer);
-
-    // Show cursor with underline in command mode
-    if (show_command_buffer && command_buffer[0] != 0) {
-        int cursor_offset = cmd_cursor_pos - start + 3;
-        if (cursor_offset >= 0) {
-            printf("\x1b[%d;%ldH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
+    // Draw the cursor at cmd_cursor_pos (underline or invert)
+    if (show_command_buffer) {
+        int cursor_screen_pos = strlen(active_panel->path) + 2 + (cmd_cursor_pos - start);
+        if (cmd_cursor_pos >= start && cmd_cursor_pos < end) { // Only if cursor is in visible range
+            printf("\x1b[%d;%dH\x1b[7m%c\x1b[0m", rows - 1, cursor_screen_pos + 1, command_buffer[cmd_cursor_pos]);
         }
-    }
 
+        // Draw inverted box at the end of the visible input string
+        int text_end_pos = strlen(active_panel->path) + 2 + (end - start);
+        if (cmd_cursor_pos == len)
+            printf("\x1b[%d;%dH\x1b[7m \x1b[0m", rows - 1, text_end_pos + 1); // Inverted box
+    }
 }
 
 void draw_bottom_bar() {
