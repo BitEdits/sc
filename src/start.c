@@ -81,24 +81,38 @@ void handle_resize(int sig) {
     resize_flag = 1;
 }
 
+void normalize(Panel *active_panel) {
+    char new_path[1024*8];
+    snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
+    strcpy(active_panel->path, new_path);
+    char normalized_path[1024 * 8];
+#ifdef _WIN32
+    _fullpath(normalized_path, active_panel->path, sizeof(normalized_path));
+#else
+    realpath(active_panel->path, normalized_path);
+#endif
+    strcpy(active_panel->path, normalized_path);
+    active_panel->cursor = 0;
+    active_panel->scroll_offset = 0;
+}
+
 void left_windows(Panel *active_panel) {
     if (strcmp(active_panel->path, "/") != 0 && strcmp(active_panel->path, "C:/") != 0) { // Not root
                 char current_path[1024 * 8];
                 strcpy(current_path, active_panel->path);
 
-    // Replace forward slashes with backslashes for Windows compatibility
     for (char *p = active_panel->path; *p; p++) {
         if (*p == '/') *p = '\\';
     }
 
     char *last_slash = strrchr(active_panel->path, '\\');
     char dir_name[256 * 10];
-    if (last_slash && last_slash != active_panel->path) { // Valid non-root slash
+    if (last_slash && last_slash != active_panel->path) {
         strcpy(dir_name, last_slash + 1);
-        *last_slash = 0; // Truncate to parent directory
-    } else { // At drive root (e.g., "C:/")
-        strcpy(dir_name, active_panel->path + 3); // Skip "C:/"
-        strcpy(active_panel->path, "C:/"); // Set to root
+        *last_slash = 0;
+    } else {
+        strcpy(dir_name, "C:");
+        strcpy(active_panel->path, "C:/");
     }
 
     chdir(active_panel->path);
@@ -153,21 +167,6 @@ void left_unix(Panel *active_panel) {
                 chdir(active_panel->path);
                 draw_interface();
     }
-}
-
-void normalize(Panel *active_panel) {
-    char new_path[1024*8];
-    snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
-    strcpy(active_panel->path, new_path);
-    char normalized_path[1024 * 8];
-#ifdef _WIN32
-    _fullpath(normalized_path, active_panel->path, sizeof(normalized_path));
-#else
-    realpath(active_panel->path, normalized_path);
-#endif
-    strcpy(active_panel->path, normalized_path);
-    active_panel->cursor = 0;
-    active_panel->scroll_offset = 0;
 }
 
 int main() {
