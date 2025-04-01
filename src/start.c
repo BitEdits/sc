@@ -89,7 +89,9 @@ int main() {
     printf("\x1b[?1049h");
 
 //  Встановлення обробника SIGWINCH
-//  signal(SIGWINCH, handle_resize);
+#ifndef _WIN32
+    signal(SIGWINCH, handle_resize);
+#endif
 
     get_window_size(&rows, &cols);
 
