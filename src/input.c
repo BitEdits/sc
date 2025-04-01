@@ -222,6 +222,17 @@ int get_input() {
             if (c3 == '6') { // PgDown
                 getchar(); // ~
                 return KEY_PGDOWN;
+            } else if (c3 == '1' && getchar() == ';') { // Ctrl/Shift modifiers
+                int c5 = getchar();
+                if (c5 == '5') { // Ctrl
+                    int c6 = getchar();
+                    if (c6 == 'D') return KEY_CTRL_LEFT;  // Ctrl+Left: \033[1;5D
+                    if (c6 == 'C') return KEY_CTRL_RIGHT; // Ctrl+Right: \033[1;5C
+                } else if (c5 == '2') { // Shift
+                    int c6 = getchar();
+                    if (c6 == 'D') return KEY_SHIFT_LEFT;  // Shift+Left: \033[1;2D
+                    if (c6 == 'C') return KEY_SHIFT_RIGHT; // Shift+Right: \033[1;2C
+                }
             }
             // Обробка F1-F10
             if (c3 >= '1' && c3 <= '2') {
@@ -246,6 +257,11 @@ int get_input() {
             if (c3 == 'Q') return KEY_F2;   // F2: \033OQ
             if (c3 == 'R') return KEY_F3;   // F3: \033OR
             if (c3 == 'S') return KEY_F4;   // F4: \033OS
+        } else if (c2 >= 'A' && c2 <= 'Z') { // ESC + Shift
+            int c3 = getchar();
+            if (c2 == 'E' && c3 == '\n') return KEY_ESC_SHIFT_ENTER; // ESC+Shift+Enter
+            if (c2 == '[') return KEY_ESC_SHIFT_LEFT_BRACKET; // ESC+Shift+[
+            if (c2 == ']') return KEY_ESC_SHIFT_RIGHT_BRACKET; // ESC+Shift+]
         } else if (c2 == 27) {
             return 27; // Esc
         } else {

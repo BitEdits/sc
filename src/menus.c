@@ -211,7 +211,6 @@ void append_to_history_display(const char *command, const char *output) {
     // Bound check for scrolling to top and handle HOME/END
     if (history_display_offset <= 0) history_display_offset = 0;
     if (history_display_offset > total_lines - max_display && total_lines > max_display) {
-//        history_display_offset = total_lines - max_display;
         history_display_offset = (total_lines > max_display) ? total_lines - max_display : 0;
     }
 
