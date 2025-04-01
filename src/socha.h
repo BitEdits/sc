@@ -77,6 +77,7 @@ typedef struct {
     off_t size;
     time_t mtime;
     int is_dir;
+    int is_link;
     mode_t mode; // Права доступу
 } File;
 

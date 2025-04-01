@@ -174,7 +174,7 @@ int main() {
                     active_panel->cursor++;
                     int panel_width = (cols - 1) / 2;
                     int start_col = (active_panel == &left_panel) ? 1 : panel_width + 1;
-                    if (active_panel->cursor > rows - 4 - 2) {
+                    if (active_panel->cursor >= rows - 4 - 6) {
                         draw_panel(active_panel, start_col, panel_width, 1);
                     } else {
                         update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
@@ -258,6 +258,11 @@ int main() {
                 char new_path[1024*8];
                 snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 strcpy(active_panel->path, new_path);
+
+                char normalized_path[1024 * 8];
+                realpath(active_panel->path, normalized_path);  // Resolve ".." and symbolic links
+                strcpy(active_panel->path, normalized_path);
+
                 active_panel->cursor = 0;
                 active_panel->scroll_offset = 0;
                 load_files(active_panel);

@@ -6,7 +6,9 @@
 int compare_files(const void *a, const void *b) {
     File *fa = (File *)a;
     File *fb = (File *)b;
-    if (fa->is_dir != fb->is_dir) {
+    if (fa->is_link != fb->is_link) {
+        return fa->is_link - fb->is_link; // Директорії першими
+    } else if (fa->is_dir != fb->is_dir) {
         return fb->is_dir - fa->is_dir; // Директорії першими
     }
     if (active_panel->sort_type == 1) { // За розміром
@@ -63,6 +65,14 @@ void load_files(Panel *panel) {
         char full_path[1024*8];
         snprintf(full_path, sizeof(full_path), "%s/%s", panel->path, entry->d_name);
 
+
+        // Use lstat() to detect symbolic links
+        if (lstat(full_path, &st) == 0) {
+            panel->files[panel->file_count].is_link = S_ISLNK(st.st_mode);  // Check if it's a symbolic link
+        } else {
+            panel->files[panel->file_count].is_link = 0;
+        }
+
         struct stat st;
         if (stat(full_path, &st) == -1) {
             continue;
@@ -73,6 +83,7 @@ void load_files(Panel *panel) {
         panel->files[panel->file_count].mtime = st.st_mtime;
         panel->files[panel->file_count].is_dir = S_ISDIR(st.st_mode);
         panel->files[panel->file_count].mode = st.st_mode; // Зберігаємо права доступу
+
         panel->file_count++;
     }
 
