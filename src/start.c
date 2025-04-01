@@ -394,10 +394,19 @@ int main() {
                         char new_path[1024*8];
                         snprintf(new_path, sizeof(new_path), "%s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                         strcpy(active_panel->path, new_path);
+                        char normalized_path[1024 * 8];
+#ifdef _WIN32
+                        _fullpath(normalized_path, active_panel->path, sizeof(normalized_path));
+#else
+                        realpath(active_panel->path, normalized_path);
+#endif
+                        strcpy(active_panel->path, normalized_path);
                         active_panel->cursor = 0;
                         active_panel->scroll_offset = 0;
-                        chdir(active_panel->path);
                         load_files(active_panel);
+                        chdir(active_panel->path);
+                        draw_interface();
+
                     }
                     draw_interface();
                 }
