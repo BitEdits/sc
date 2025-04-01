@@ -39,35 +39,41 @@
 #define COLOR_WHITE "\x1b[1;37m" // Bright white for text
 
 // Коди для стрілок та інших клавіш
-#define KEY_UP     1000
-#define KEY_DOWN   1001
-#define KEY_RIGHT  1002
-#define KEY_LEFT   1003
-#define KEY_PGUP   1004
-#define KEY_PGDOWN 1005
-#define KEY_HOME   1006
-#define KEY_END    1007
-#define KEY_F1     1008
-#define KEY_F2     1009
-#define KEY_F3     1010
-#define KEY_F4     1011
-#define KEY_F5     1012
-#define KEY_F6     1013
-#define KEY_F7     1014
-#define KEY_F8     1015
-#define KEY_F9     1016
-#define KEY_F10    1017
+#define KEY_ESC    1000
+#define KEY_UP     1001
+#define KEY_DOWN   1002
+#define KEY_RIGHT  1003
+#define KEY_LEFT   1004
+#define KEY_PGUP   1005
+#define KEY_PGDOWN 1006
+#define KEY_HOME   1007
+#define KEY_END    1008
+#define KEY_INSERT 1009
+#define KEY_DELETE 1010
+#define KEY_F1     1011
+#define KEY_F2     1012
+#define KEY_F3     1013
+#define KEY_F4     1014
+#define KEY_F5     1015
+#define KEY_F6     1016
+#define KEY_F7     1017
+#define KEY_F8     1018
+#define KEY_F9     1019
+#define KEY_F10    1020
+#define KEY_ENTER  1021
 
-#define KEY_CTRL_LEFT                1018
-#define KEY_CTRL_RIGHT               1019
-#define KEY_INSERT                   1020
-#define KEY_DELETE                   1021
-#define KEY_CTRL_ENTER               1022
-#define KEY_SHIFT_LEFT               1023
-#define KEY_SHIFT_RIGHT              1024
-#define KEY_ESC_SHIFT_ENTER          1025
-#define KEY_ESC_SHIFT_LEFT_BRACKET   1026
-#define KEY_ESC_SHIFT_RIGHT_BRACKET  1027
+#define KEY_TAB                      1022
+#define KEY_CTRL_O                   1023
+#define KEY_BACKSPACE                1024
+#define KEY_CTRL_LEFT                1025
+#define KEY_CTRL_RIGHT               1026
+#define KEY_CTRL_ENTER               1027
+#define KEY_SHIFT_LEFT               1028
+#define KEY_SHIFT_RIGHT              1029
+#define KEY_SHIFT_ENTER              1030
+#define KEY_ESC_SHIFT_ENTER          1031
+#define KEY_ESC_SHIFT_LEFT_BRACKET   1032
+#define KEY_ESC_SHIFT_RIGHT_BRACKET  1033
 
 #define MAX_FILES   1000 // Максимальна кількість файлів у директорії
 #define MAX_HISTORY 1000 // Максимальна кількість команд в історії

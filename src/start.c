@@ -126,14 +126,14 @@ int main() {
 
         int c = get_input();
 
-        if (c == 15) { // CTRL+O (COMMANDER MODALITY / NAVIGATOR MODALITY)
+        if (c == KEY_CTRL_O) {
             show_command_buffer = !show_command_buffer;
             if (show_command_buffer) {
                 history_scroll_pos = history_count; // Починаємо з останньої команди
                 history_display_offset = 0; // Скидаємо зміщення відображення
             }
             draw_interface();
-        } else if (c == '\t') { // Перемикання панелей (Tab)
+        } else if (c == KEY_TAB) {
             int prev_active = (active_panel == &left_panel) ? 1 : 0;
             active_panel = (active_panel == &left_panel) ? &right_panel : &left_panel;
             chdir(active_panel->path);
@@ -337,7 +337,7 @@ int main() {
 //              update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
                 draw_interface();
              }
-        } else if (c == '\n') { // Enter
+        } else if (c == KEY_ENTER) { // Enter
             if (command_buffer[0] != 0) {
                 show_command_buffer = 1;
                 execute_command(command_buffer); // This will update history and call append_to_history_display
@@ -410,7 +410,7 @@ int main() {
             }
         } else if (c == KEY_INSERT) {
             insert_mode = !insert_mode;
-        } else if (c == 127) { // Backspace
+        } else if (c == KEY_BACKSPACE) { // Backspace
             int len = strlen(command_buffer);
             if (cmd_cursor_pos > 0) {
                 memmove(&command_buffer[cmd_cursor_pos - 1], &command_buffer[cmd_cursor_pos], len - cmd_cursor_pos + 1);

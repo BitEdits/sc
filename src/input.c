@@ -204,6 +204,56 @@ void finalize_exec(const char *cmd) {
     command_buffer[0] = 0;
 }
 
+#ifdef _WIN32
+
+int get_input() {
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    INPUT_RECORD ir;
+    DWORD count;
+
+    while (1) {
+        ReadConsoleInput(hStdin, &ir, 1, &count);
+        if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown) {
+            switch (ir.Event.KeyEvent.wVirtualKeyCode) {
+                case VK_UP: return KEY_UP;
+                case VK_DOWN: return KEY_DOWN;
+                case VK_RIGHT: return KEY_RIGHT;
+                case VK_LEFT: return KEY_LEFT;
+                case VK_PRIOR: return KEY_PGUP;
+                case VK_NEXT: return KEY_PGDOWN;
+                case VK_HOME: return KEY_HOME;
+                case VK_END: return KEY_END;
+                case VK_F1: return KEY_F1;
+                case VK_F2: return KEY_F2;
+                case VK_F3: return KEY_F3;
+                case VK_F4: return KEY_F4;
+                case VK_F5: return KEY_F5;
+                case VK_F6: return KEY_F6;
+                case VK_F7: return KEY_F7;
+                case VK_F8: return KEY_F8;
+                case VK_F9: return KEY_F9;
+                case VK_F10: return KEY_F10;
+                case VK_INSERT: return KEY_INSERT;
+                case VK_DELETE: return KEY_DELETE;
+                case VK_RETURN: return KEY_ENTER;
+                case VK_ESCAPE: return KEY_ESC;
+                default:
+                    switch (ir.Event.KeyEvent.uChar.AsciiChar) {
+                        case 8: return KEY_BACKSPACE;
+                        case 9: return KEY_TAB;
+                        case 13: return KEY_ENTER;
+                        case 15: return KEY_CTRL_O;
+                        case 127: return KEY_BACKSPACE;
+                        default: return ir.Event.KeyEvent.uChar.AsciiChar;
+                    }
+                    
+            }
+        }
+    }
+}
+
+#else
+
 int get_input() {
     int c = getchar();
     if (c == 27) { // Esc або стрілки
@@ -266,13 +316,21 @@ int get_input() {
             if (c2 == '[') return KEY_ESC_SHIFT_LEFT_BRACKET; // ESC+Shift+[
             if (c2 == ']') return KEY_ESC_SHIFT_RIGHT_BRACKET; // ESC+Shift+]
         } else if (c2 == 27) {
-            return 27; // Esc
+            return KEY_ESC; // Esc
         } else {
             ungetc(c2, stdin); // Повернути символ назад
-            return 27;
+            return KEY_ESC;
         }
+    } else if (c == 13) {
+        return KEY_ENTER;
+    } else if (c == 9) {
+        return KEY_TAB;
+    } else if (c == 15) {
+        return KEY_CTRL_O;
+    } else if (c == 127) {
+        return KEY_BACKSPACE;
     }
     return c;
 }
 
-
+#endif

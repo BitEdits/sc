@@ -500,7 +500,7 @@ int handle_menu() {
                     }
                 }
                 submenu_active = 0; // Закриваємо підменю після виконання дії
-            } else if (c == 27 || c == KEY_LEFT || c == KEY_RIGHT) { // Esc або стрілки вліво/вправо
+            } else if (c == KEY_ESC || c == KEY_LEFT || c == KEY_RIGHT) { // Esc або стрілки вліво/вправо
                 printf(COLOR_TEXT);
                 if (c == KEY_LEFT && selected_tab > 0) {
                     selected_tab--;
@@ -508,7 +508,7 @@ int handle_menu() {
                 } else if (c == KEY_RIGHT && selected_tab < tab_count - 1) {
                     selected_tab++;
                     selected_item = 0; // Скидаємо вибір на початок нового підменю
-                } else if (c == 27) {
+                } else if (c == KEY_ESC) {
                     submenu_active = 0;
                     break; // Esc
                 }
@@ -520,10 +520,10 @@ int handle_menu() {
                 selected_tab--;
             } else if (c == KEY_RIGHT && selected_tab < tab_count - 1) {
                 selected_tab++;
-            } else if (c == 13 || c == KEY_DOWN) {
+            } else if (c == KEY_ENTER || c == KEY_DOWN) {
                 submenu_active = 1;
                 selected_item = 0;
-            } else if (c == 27) { // Esc
+            } else if (c == KEY_ESC) { // Esc
                 break;
             }
             draw_interface();
@@ -585,12 +585,12 @@ int handle_exit_dialog() {
         int c = get_input();
         if (c == 'y' || c == 'Y') {
             return 1; // Yes
-        } else if (c == 'n' || c == 'N' || c == 27) { // Esc
+        } else if (c == 'n' || c == 'N' || c == KEY_ESC) { // Esc
             return 0; // No
-        } else if (c == '\t' || c == KEY_RIGHT || c == KEY_LEFT) { // Tab
+        } else if (c == KEY_TAB || c == KEY_RIGHT || c == KEY_LEFT) { // Tab
             selected_button = (selected_button + 1) % 2; // Перемикаємо між Yes і No
             draw_exit_dialog(selected_button);
-        } else if (c == '\n') { // Enter
+        } else if (c == KEY_ENTER) { // Enter
             return (selected_button == 0) ? 1 : 0; // Yes if selected_button is 0, No if 1
         }
     }
