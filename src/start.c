@@ -14,6 +14,8 @@ volatile sig_atomic_t resize_flag = 0;
 int show_command_buffer = 0;
 int history_scroll_pos = 0; // Позиція прокручування історії команд
 int history_display_offset = 0; // Зміщення для відображення історії
+int total_lines = 0;
+int max_display = 0;
 
 #ifdef _WIN32
 
@@ -197,7 +199,7 @@ int main() {
             }
         } else if (c == KEY_PGUP) {
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
-                int max_display = rows - 4;
+                max_display = rows - 4;
                 history_display_offset += max_display / 2; // Скролимо на пів екрана
                 // Перевіряємо межі
                 int total_lines = 0;
@@ -228,6 +230,9 @@ int main() {
         } else if (c == KEY_PGDOWN) {
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
                 history_display_offset -= (rows - 4) / 2; // Скролимо на пів екрана
+                if (history_display_offset > total_lines - max_display) {
+                    history_display_offset = total_lines - max_display;
+                }
                 if (history_display_offset < 0) history_display_offset = 0;
                 draw_interface();
             } else { // Панелі видимі: Page Down
@@ -298,27 +303,35 @@ int main() {
             }
             cmd_pos = 0;
             command_buffer[0] = 0;
-        } else if (c == KEY_HOME && !show_command_buffer) { // Home
-            prev_cursor = active_panel->cursor;
-            active_panel->cursor = 0;
-            active_panel->scroll_offset = 0;
-            int panel_width = (cols - 1) / 2;
-            int start_col = (active_panel == &left_panel) ? 1 : panel_width + 1;
-//          update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
-            cmd_pos = 0;
-            command_buffer[0] = 0;
-            draw_interface();
-        } else if (c == KEY_END && !show_command_buffer) { // End
-            prev_cursor = active_panel->cursor;
-            active_panel->cursor = active_panel->file_count - 1;
-            active_panel->scroll_offset = active_panel->cursor - (rows - 4 - 2) + 1;
-            if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
-            int panel_width = (cols - 1) / 2;
-            int start_col = (active_panel == &left_panel) ? 1 : panel_width + 1;
-//          update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
-            cmd_pos = 0;
-            command_buffer[0] = 0;
-            draw_interface();
+        } else if (c == KEY_HOME) { // Home
+            if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
+                history_display_offset = 0;
+            } else {
+                prev_cursor = active_panel->cursor;
+                active_panel->cursor = 0;
+                active_panel->scroll_offset = 0;
+                int panel_width = (cols - 1) / 2;
+                int start_col = (active_panel == &left_panel) ? 1 : panel_width + 1;
+//              update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                cmd_pos = 0;
+                command_buffer[0] = 0;
+                draw_interface();
+            }
+        } else if (c == KEY_END && total_lines > max_display) { // End
+            if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
+                history_display_offset = total_lines - max_display;
+            } else {
+                prev_cursor = active_panel->cursor;
+                active_panel->cursor = active_panel->file_count - 1;
+                active_panel->scroll_offset = active_panel->cursor - (rows - 4 - 2) + 1;
+                if (active_panel->scroll_offset < 0) active_panel->scroll_offset = 0;
+                int panel_width = (cols - 1) / 2;
+                int start_col = (active_panel == &left_panel) ? 1 : panel_width + 1;
+//              update_cursor(active_panel, start_col, panel_width, 1, prev_cursor);
+                cmd_pos = 0;
+                command_buffer[0] = 0;
+                draw_interface();
+             }
         } else if (c == '\n') { // Enter
             if (command_buffer[0] != 0) {
                 show_command_buffer = 1;

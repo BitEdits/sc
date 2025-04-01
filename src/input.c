@@ -9,6 +9,8 @@ char buffer[1024 * 3];
 
 void execute_command(const char *cmd) {
 
+    memset(output, 0, sizeof(output));
+
  #ifdef _WIN32
     HANDLE hChildStdoutRead, hChildStdoutWrite;
     SECURITY_ATTRIBUTES saAttr;

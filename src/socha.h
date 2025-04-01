@@ -109,6 +109,8 @@ extern volatile sig_atomic_t resize_flag;
 extern int show_command_buffer;
 extern int history_scroll_pos; // Позиція прокручування історії команд
 extern int history_display_offset; // Зміщення для відображення історії (для скролінгу)
+extern int total_lines;
+extern int max_display;
 
 // Функції з input.c
 int get_input();

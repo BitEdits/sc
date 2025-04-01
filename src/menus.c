@@ -176,8 +176,9 @@ void update_cursor(Panel *panel, int start_col, int width, int is_active, int pr
 }
 
 void append_to_history_display(const char *command, const char *output) {
-    int max_display = rows - 4; // Space for menu, command line, and bottom bar
+    max_display = rows - 4; // Space for menu, command line, and bottom bar
     char *history_lines[MAX_HISTORY * 10]; // Allow enough lines for multiline outputs
+    total_lines = 0;
     int line_count = 0;
 
     // Calculate the starting index in the circular buffer
@@ -192,6 +193,7 @@ void append_to_history_display(const char *command, const char *output) {
         snprintf(command_line, sizeof(command_line), "> %s", (i == items_to_show - 1) ? command : history[idx].command);
         history_lines[line_count] = strdup(command_line);
         line_count++;
+        total_lines++;
 
         // Add output lines
         char output_copy[16384 * 4];
@@ -201,12 +203,20 @@ void append_to_history_display(const char *command, const char *output) {
         while (line && line_count < MAX_HISTORY * 10) {
             history_lines[line_count] = strdup(line);
             line_count++;
+            total_lines++;
             line = strtok(NULL, "\n");
         }
     }
 
+    // Bound check for scrolling to top and handle HOME/END
+    if (history_display_offset <= 0) history_display_offset = 0;
+    if (history_display_offset > total_lines - max_display && total_lines > max_display) {
+//        history_display_offset = total_lines - max_display;
+        history_display_offset = (total_lines > max_display) ? total_lines - max_display : 0;
+    }
+
     // Display visible lines
-    for (int i = 0; i < max_display && i < line_count; i++) {
+    for (int i = history_display_offset; i < max_display + history_display_offset && i < line_count; i++) {
         printf("\x1b[37;40m\x1b[%d;1H%-*s", i + 2, cols, history_lines[i]);
     }
 
