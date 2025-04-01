@@ -246,7 +246,6 @@ int get_input() {
                         case 127: return KEY_BACKSPACE;
                         default: return ir.Event.KeyEvent.uChar.AsciiChar;
                     }
-                    
             }
         }
     }
@@ -321,7 +320,7 @@ int get_input() {
             ungetc(c2, stdin); // Повернути символ назад
             return KEY_ESC;
         }
-    } else if (c == 13) {
+    } else if (c == '\n') {
         return KEY_ENTER;
     } else if (c == 9) {
         return KEY_TAB;
