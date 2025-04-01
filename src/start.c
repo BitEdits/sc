@@ -122,12 +122,12 @@ int main() {
         if (resize_flag) {
             get_window_size(&rows, &cols);
             resize_flag = 0;
-            draw_interface();
+//            draw_interface();
         }
 
         int c = get_input();
 
-        if (c == 15) { // CTRL+O
+        if (c == 15) { // CTRL+O (COMMANDER MODALITY / NAVIGATOR MODALITY)
             show_command_buffer = !show_command_buffer;
             if (show_command_buffer) {
                 history_scroll_pos = history_count; // Починаємо з останньої команди
@@ -263,7 +263,14 @@ int main() {
                 strcpy(active_panel->path, new_path);
 
                 char normalized_path[1024 * 8];
-                realpath(active_panel->path, normalized_path);  // Resolve ".." and symbolic links
+
+#ifdef _WIN32
+    _fullpath(normalized_path, active_panel->path, sizeof(normalized_path));
+#else
+    realpath(active_panel->path, normalized_path);
+#endif
+
+//                realpath(active_panel->path, normalized_path);  // Resolve ".." and symbolic links
                 strcpy(active_panel->path, normalized_path);
 
                 active_panel->cursor = 0;
@@ -453,7 +460,9 @@ int main() {
                 enable_raw_mode();
                 atexit(disable_raw_mode);
                 printf("\x1b[?1049h");
+#ifndef _WIN32
                 signal(SIGWINCH, handle_resize);
+#endif
                 get_window_size(&rows, &cols);
                 draw_interface();
             }

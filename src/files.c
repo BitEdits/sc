@@ -66,12 +66,13 @@ void load_files(Panel *panel) {
         snprintf(full_path, sizeof(full_path), "%s/%s", panel->path, entry->d_name);
 
 
-        // Use lstat() to detect symbolic links
-        if (lstat(full_path, &st) == 0) {
-            panel->files[panel->file_count].is_link = S_ISLNK(st.st_mode);  // Check if it's a symbolic link
-        } else {
-            panel->files[panel->file_count].is_link = 0;
-        }
+#ifdef _WIN32
+    panel->files[panel->file_count].is_link = 0;  // Or use a Windows-specific check
+#else
+    if (lstat(full_path, &st) == 0) {
+        panel->files[panel->file_count].is_link = S_ISLNK(st.st_mode);
+    }
+#endif
 
         struct stat st;
         if (stat(full_path, &st) == -1) {
