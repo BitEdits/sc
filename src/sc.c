@@ -474,7 +474,7 @@ int main() {
         } else if (c == KEY_F4) { // F4 (Edit)
             if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
                 char cmd[1024*8];
-                snprintf(cmd, sizeof(cmd), "mcedit %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
+                snprintf(cmd, sizeof(cmd), "/home/tonpa/depot/bitedits/sc/texpro %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 disable_raw_mode();
                 int ret = system(cmd);
                 if (ret == -1) {

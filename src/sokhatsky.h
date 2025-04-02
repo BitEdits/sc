@@ -33,10 +33,10 @@
 #define COLOR_DIR "\x1b[1;97;104m"
 #define COLOR_RESET "\x1b[30;40m"
 
-#define COLOR_PINK_BG "\x1b[48;2;255;105;180m"
 #define COLOR_BUTTON_HIGHLIGHT "\x1b[1;37m\x1b[44m"
 #define COLOR_MAGENTA "\x1b[35m" // Magenta for border
 #define COLOR_WHITE "\x1b[1;37m" // Bright white for text
+#define COLOR_PINK_BG "\x1b[48;2;255;105;180m"
 
 // Коди для стрілок та інших клавіш
 #define KEY_ESC    1000
