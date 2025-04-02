@@ -2,7 +2,7 @@
 
 echo "Compiling..."
 
-gcc src/texpro.c -o texpro
+gcc src/tv.c -o tv
 
 if [ $? -eq 0 ]; then
   echo "OK"
