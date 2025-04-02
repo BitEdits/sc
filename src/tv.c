@@ -18,6 +18,7 @@
 #define COLOR_LIGHT_BLUE "\x1b[104m"
 #define COLOR_WHITE "\x1b[1;37m" // Bright white for text
 #define COLOR_PINK_BG "\x1b[48;2;255;105;180m"
+#define TAB_WIDTH 4
 
 // Key codes from socha.h
 #define KEY_ESC    1000
@@ -45,9 +46,10 @@
 #define KEY_CTRL_LEFT  1025
 #define KEY_CTRL_RIGHT 1026
 #define KEY_INSERT 1009
+#define KEY_TAB    9
 
 #define MAX_LINE_SIZE (1ULL << 32)  // 4GB max line size
-#define CHUNK_SIZE 4096             // Buffer read chunk size
+#define CHUNK_SIZE 100             // Buffer read chunk size
 
 // Global state
 struct termios orig_termios;
@@ -420,7 +422,7 @@ void draw_header() {
     printf("\x1b[1;1H\x1b[33;44m▄%s%s TV \x1b[90;106m    [%s]    \x1b[37;46m    %s%s%s%-*s", COLOR_PINK_BG, COLOR_WHITE, filename,
         view_mode ? "[VIEW]" : "[EDIT]",
         view_mode ? "" : (insert_mode ? "[INSERTING]"
-                                      : "[REPLACING]"), 
+                                      : "[REPLACING]"),
         modified ? "[+]" : "", cols - ((int)strlen(filename)), "");
     printf("\x1b[K");
 }
@@ -453,42 +455,33 @@ void draw_menu(int selected) {
     printf(COLOR_RESET);
 }
 
-void update_line(int line) {
-    int buf_idx = scroll_y + line;
-    int screen_row = line + 2;
-    printf("\x1b[%d;1H\x1b[K", screen_row);  // Clear the entire line
-    if (buf_idx >= buffer.count) return;
-
-    Line *l = &buffer.lines[buf_idx];
-    size_t byte_start = display_to_byte(l->data, scroll_x, l->len);
-    size_t disp_len = 0;
-    size_t byte_end = byte_start;
-    while (byte_end < l->len && disp_len < cols) {
-        size_t bytes;
-        uint32_t cp = utf8_to_codepoint(l->data, byte_end, l->len, &bytes);
-        disp_len += utf8_char_width(cp);
-        byte_end += bytes;
-    }
-    if (byte_start < l->len) {
-        printf("\x1b[%d;1H%s%.*s", screen_row, COLOR_TEXT, (int)(byte_end - byte_start), l->data + byte_start);
-    }
-    if (show_blanks && disp_len < cols) {
-        printf("%s%*s%s", COLOR_LIGHT_BLUE, (int)(cols - disp_len), "", COLOR_RESET);
-    } else {
-        printf("%s", COLOR_RESET);
-    }
-}
-
 void draw_text() {
     printf("\x1b[2;1H\x1b[J");  // Clear from cursor to end of screen
-    for (int i = 0; i < rows - 2; i++) {
-        update_line(i);
-        if (i < rows - 3) printf("\n");  // Avoid extra newline on last line
+
+    // Clamp scroll_y to prevent accessing invalid buffer indices
+    if (scroll_y > buffer.count) {
+        scroll_y = buffer.count > 0 ? buffer.count - 1 : 0;
     }
-    // Clear cursor trail
+
+    // Calculate the number of lines to render (account for header and footer)
+    int max_lines = rows - 2;  // 1 row for header, 1 for footer
+    if (max_lines < 0) max_lines = 0;  // Safety check
+
+    for (int i = 0; i < max_lines; i++) {
+        int buf_idx = scroll_y + i;
+        if (buf_idx >= (int)buffer.count) {
+            // If we've run out of lines to render, clear the rest of the screen row
+            printf("\x1b[%d;1H\x1b[K", i + 2);
+            continue;
+        }
+        update_line(i);
+        if (i < max_lines - 1) printf("\n");
+    }
+
+    // Render the cursor (unchanged, but ensure it’s within bounds)
     if (last_cursor_x != (size_t)-1 && last_cursor_y >= 0 && !view_mode) {
         int old_y = last_cursor_y - scroll_y;
-        if (old_y >= 0 && old_y < rows - 2) {
+        if (old_y >= 0 && old_y < max_lines) {
             Line *l = &buffer.lines[last_cursor_y];
             size_t disp_x = byte_to_display(l->data, last_cursor_x, l->len);
             int x = disp_x - scroll_x;
@@ -498,7 +491,6 @@ void draw_text() {
             }
         }
     }
-    // Draw new cursor
     if (!view_mode) {
         Line *l = &buffer.lines[cursor_y];
         size_t disp_x = byte_to_display(l->data, cursor_x, l->len);
@@ -511,8 +503,61 @@ void draw_text() {
     }
     last_cursor_x = cursor_x;
     last_cursor_y = cursor_y;
-    // Ensure cursor is at a safe position after drawing
     printf("\x1b[%d;1H", rows);
+}
+
+// Updated update_line function
+void update_line(int line) {
+    int buf_idx = scroll_y + line;
+    int screen_row = line + 2;
+    printf("\x1b[%d;1H\x1b[K", screen_row);  // Clear the entire line
+    if (buf_idx >= (int)buffer.count) return;  // Safety check
+
+    Line *l = &buffer.lines[buf_idx];
+    size_t byte_start = display_to_byte(l->data, scroll_x, l->len);
+    size_t disp_len = 0;
+    size_t byte_end = byte_start;
+
+    // Calculate how many characters to render within the visible screen width
+    while (byte_end < l->len && disp_len < (size_t)cols) {
+        size_t bytes;
+        uint32_t cp = utf8_to_codepoint(l->data, byte_end, l->len, &bytes);
+        int width = utf8_char_width(cp);
+        if (cp == '\t') {
+            int spaces = TAB_WIDTH - (disp_len % TAB_WIDTH);
+            disp_len += spaces;
+        } else if (cp == 0 && bytes == 1) {  // Invalid UTF-8
+            disp_len += 1;
+        } else {
+            disp_len += width;
+        }
+        byte_end += bytes;
+    }
+
+    // Render the visible portion of the line
+    if (byte_start < l->len) {
+        printf("\x1b[%d;1H%s", screen_row, COLOR_TEXT);
+        for (size_t i = byte_start; i < byte_end && i < l->len;) {
+            size_t bytes;
+            uint32_t cp = utf8_to_codepoint(l->data, i, l->len, &bytes);
+            if (cp == '\t') {
+                int spaces = TAB_WIDTH - ((byte_to_display(l->data, i, l->len) - scroll_x) % TAB_WIDTH);
+                printf("%*s", spaces, "");
+            } else if (cp == 0 && bytes == 1) {  // Invalid UTF-8
+                printf("?");
+            } else {
+                printf("%.*s", (int)bytes, l->data + i);
+            }
+            i += bytes;
+        }
+    }
+
+    // Fill the rest of the line with blanks if enabled
+    if (show_blanks && disp_len < (size_t)cols) {
+        printf("%s%*s%s", COLOR_LIGHT_BLUE, (int)(cols - disp_len), "", COLOR_RESET);
+    } else {
+        printf("%s", COLOR_RESET);
+    }
 }
 
 // Editing functions
@@ -641,7 +686,6 @@ int handle_menu() {
     return 0;
 }
 
-// Main
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         printf("Usage: texpro <filename>\n");
@@ -672,10 +716,12 @@ int main(int argc, char *argv[]) {
     load_file();
 
     printf("\x1b[?1049h");
+
     while (1) {
         if (resize_flag) {
             get_window_size(&rows, &cols);
-            if (cursor_y >= rows - 2) cursor_y = rows - 3;
+            if (cursor_y >= (size_t)(rows - 2)) cursor_y = rows - 3;
+            if (scroll_y > buffer.count) scroll_y = buffer.count > 0 ? buffer.count - 1 : 0;
             resize_flag = 0;
             draw_text();
         }
@@ -688,16 +734,16 @@ int main(int argc, char *argv[]) {
         if (c == KEY_F1) {
             // Help (placeholder)
         } else if (c == KEY_F3) {
-            if (view_mode) {  // In View mode, F3 quits
+            if (view_mode) {
                 if (!modified || handle_menu()) break;
-            } else {  // In Edit mode, F3 switches to View mode
+            } else {
                 view_mode = 1;
                 draw_header();
             }
         } else if (c == KEY_F4) {
-            if (!view_mode) {  // In Edit mode, F4 quits
+            if (!view_mode) {
                 if (!modified || handle_menu()) break;
-            } else {  // In View mode, F4 switches to Edit mode
+            } else {
                 view_mode = 0;
                 draw_header();
             }
@@ -705,7 +751,7 @@ int main(int argc, char *argv[]) {
             show_blanks = !show_blanks;
             draw_text();
         } else if (c == KEY_F10) {
-            if (!modified || handle_menu()) break;  // F10 quits in both modes
+            if (!modified || handle_menu()) break;
         } else if (c == KEY_UP) {
             if (cursor_y > 0) {
                 cursor_y--;
@@ -713,7 +759,7 @@ int main(int argc, char *argv[]) {
                 if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
                     cursor_x = buffer.lines[cursor_y].len;
                 }
-                if (cursor_y < scroll_y) {
+                if (cursor_y < (size_t)scroll_y) {
                     scroll_y--;
                     draw_text();
                 }
@@ -725,8 +771,11 @@ int main(int argc, char *argv[]) {
                 if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
                     cursor_x = buffer.lines[cursor_y].len;
                 }
-                if (cursor_y >= scroll_y + rows - 2) {
+                if (cursor_y >= (size_t)(scroll_y + rows - 2)) {
                     scroll_y++;
+                    if (scroll_y + rows - 2 > buffer.count) {
+                        scroll_y = buffer.count > (size_t)(rows - 2) ? buffer.count - (rows - 2) : 0;
+                    }
                     draw_text();
                 }
             }
@@ -770,10 +819,13 @@ int main(int argc, char *argv[]) {
                 draw_text();
             }
         } else if (c == KEY_PGDOWN) {
-            if (scroll_y + rows - 2 < buffer.count) {
+            if (scroll_y + rows - 2 < (int)buffer.count) {
                 scroll_y += rows - 2;
                 cursor_y += rows - 2;
                 if (cursor_y >= buffer.count) cursor_y = buffer.count - 1;
+                if (scroll_y + rows - 2 > buffer.count) {
+                    scroll_y = buffer.count > (size_t)(rows - 2) ? buffer.count - (rows - 2) : 0;
+                }
                 size_t disp_x = byte_to_display(buffer.lines[cursor_y].data, cursor_x, buffer.lines[cursor_y].len);
                 if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
                     cursor_x = buffer.lines[cursor_y].len;
@@ -788,7 +840,7 @@ int main(int argc, char *argv[]) {
             Line *l = &buffer.lines[cursor_y];
             cursor_x = l->len;
             size_t disp_x = byte_to_display(l->data, cursor_x, l->len);
-            if (disp_x >= cols) scroll_x = disp_x - cols + 1;
+            if (disp_x >= (size_t)cols) scroll_x = disp_x - cols + 1;
             else scroll_x = 0;
             draw_text();
         } else if (!view_mode) {
@@ -811,6 +863,8 @@ int main(int argc, char *argv[]) {
                 }
             } else if (c == KEY_DELETE) {
                 delete_char();
+            } else if (c == KEY_TAB) {
+                insert_char('\t');
             } else if (c >= 32 && c <= 126) {
                 insert_char(c);
             } else if (c == KEY_ENTER) {
@@ -824,4 +878,6 @@ int main(int argc, char *argv[]) {
     free_buffer();
     printf("\x1b[?1049l\x1b[2J\x1b[H");
     return 0;
+
 }
+
