@@ -1,4 +1,4 @@
-// socha.h
+// sokhatky.h
 
 #ifndef SC_H
 #define SC_H

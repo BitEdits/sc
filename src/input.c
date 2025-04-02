@@ -1,6 +1,6 @@
 // input.c
 
-#include "socha.h"
+#include "sokhatsky.h"
 
 char *command_copy; //strdup(cmd);
 char *output_copy; //strdup(output);

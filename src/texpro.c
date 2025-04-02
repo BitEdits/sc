@@ -1,0 +1,567 @@
+// texpro.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <errno.h>
+#include <ctype.h>
+
+// Colors from socha.h
+#define COLOR_HEADER "\x1b[1;97;104m"
+#define COLOR_TEXT "\x1b[1;96;104m"
+#define COLOR_RESET "\x1b[30;40m"
+#define COLOR_WHITE "\x1b[1;37m"
+
+// Key codes from socha.h
+#define KEY_ESC    1000
+#define KEY_UP     1001
+#define KEY_DOWN   1002
+#define KEY_RIGHT  1003
+#define KEY_LEFT   1004
+#define KEY_PGUP   1005
+#define KEY_PGDOWN 1006
+#define KEY_HOME   1007
+#define KEY_END    1008
+#define KEY_ENTER  1021
+#define KEY_BACKSPACE 1024
+#define KEY_DELETE 1010
+#define KEY_F1     1011
+#define KEY_F3     1013
+#define KEY_F4     1014
+#define KEY_F10    1020
+#define KEY_CTRL_LEFT  1025
+#define KEY_CTRL_RIGHT 1026
+#define KEY_INSERT 1009
+
+#define MAX_LINE_SIZE (1ULL << 32)  // 4GB max line size
+#define CHUNK_SIZE 4096             // Buffer read chunk size
+
+// Global state
+struct termios orig_termios;
+int rows, cols;
+volatile sig_atomic_t resize_flag = 0;
+char filename[1024];
+int fd = -1;
+off_t file_size = 0;
+int view_mode = 0;  // 0 = edit (default), 1 = view
+int modified = 0;
+int insert_mode = 1;  // 1 = insert, 0 = replace
+
+// Line structure
+typedef struct Line {
+    char *data;         // Line content
+    size_t len;         // Length of line (excluding \n)
+    size_t capacity;    // Allocated size
+} Line;
+
+// Line buffer
+typedef struct {
+    Line *lines;        // Array of lines
+    size_t count;       // Number of lines
+    size_t capacity;    // Allocated size
+} LineBuffer;
+
+LineBuffer buffer = {0};
+int cursor_x = 0, cursor_y = 0;  // Cursor position
+int scroll_x = 0, scroll_y = 0;  // Scroll offsets
+int last_cursor_x = -1, last_cursor_y = -1;  // For cursor trail fix
+
+// Prototypes
+void enable_raw_mode();
+void disable_raw_mode();
+int get_window_size(int *r, int *c);
+void handle_resize(int sig);
+int get_input();
+void load_file();
+void draw_header();
+void draw_footer();
+void draw_menu(int selected);
+int handle_menu();
+void draw_text();
+void update_line(int line);
+void insert_char(char c);
+void delete_char();
+void save_file();
+void move_cursor_word(int direction);
+void free_buffer();
+
+// Line buffer functions
+void init_buffer() {
+    buffer.lines = malloc(sizeof(Line) * 1024);
+    buffer.count = 0;
+    buffer.capacity = 1024;
+}
+
+void grow_buffer() {
+    buffer.capacity *= 2;
+    buffer.lines = realloc(buffer.lines, sizeof(Line) * buffer.capacity);
+}
+
+void add_line(char *data, size_t len) {
+    if (buffer.count >= buffer.capacity) grow_buffer();
+    Line *line = &buffer.lines[buffer.count++];
+    line->data = malloc(len + 1);
+    line->capacity = len + 1;
+    memcpy(line->data, data, len);
+    line->len = len;
+}
+
+void load_file() {
+    init_buffer();
+    char chunk[CHUNK_SIZE];
+    off_t offset = 0;
+    char *line_start = chunk;
+    size_t line_len = 0;
+
+    while (offset < file_size) {
+        ssize_t bytes = pread(fd, chunk, CHUNK_SIZE, offset);
+        if (bytes <= 0) break;
+
+        for (size_t i = 0; i < bytes; i++) {
+            if (chunk[i] == '\n' || line_len >= MAX_LINE_SIZE) {
+                add_line(line_start, line_len);
+                line_start = chunk + i + 1;
+                line_len = 0;
+            } else {
+                line_len++;
+            }
+        }
+        if (line_len > 0 && offset + bytes >= file_size) {
+            add_line(line_start, line_len);
+        }
+        offset += bytes;
+    }
+    if (buffer.count == 0) {
+        add_line("", 0);  // Empty file
+    }
+}
+
+void free_buffer() {
+    for (size_t i = 0; i < buffer.count; i++) {
+        free(buffer.lines[i].data);
+    }
+    free(buffer.lines);
+    buffer.lines = NULL;
+    buffer.count = buffer.capacity = 0;
+}
+
+// Terminal handling
+void enable_raw_mode() {
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ICANON | ECHO | IEXTEN);
+    raw.c_iflag &= ~(IXON);
+    raw.c_cc[VMIN] = 1;
+    raw.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+void disable_raw_mode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+int get_window_size(int *r, int *c) {
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) return -1;
+    *r = ws.ws_row;
+    *c = ws.ws_col;
+    return 0;
+}
+
+void handle_resize(int sig) {
+    resize_flag = 1;
+}
+
+int get_input() {
+    int c = getchar();
+    if (c == 27) {
+        int c2 = getchar();
+        if (c2 == '[') {
+            int c3 = getchar();
+            if (c3 == 'A') return KEY_UP;
+            if (c3 == 'B') return KEY_DOWN;
+            if (c3 == 'C') return KEY_RIGHT;
+            if (c3 == 'D') return KEY_LEFT;
+            if (c3 == 'H') return KEY_HOME;
+            if (c3 == 'F') return KEY_END;
+            if (c3 == '3' && getchar() == '~') return KEY_DELETE;
+            if (c3 == '5' && getchar() == '~') return KEY_PGUP;
+            if (c3 == '6' && getchar() == '~') return KEY_PGDOWN;
+            if (c3 == '1' && getchar() == ';') {
+                int c5 = getchar();
+                if (c5 == '5') {
+                    int c6 = getchar();
+                    if (c6 == 'D') return KEY_CTRL_LEFT;
+                    if (c6 == 'C') return KEY_CTRL_RIGHT;
+                }
+            }
+        } else if (c2 == 'O') {
+            int c3 = getchar();
+            if (c3 == 'P') return KEY_F1;
+            if (c3 == 'R') return KEY_F3;
+            if (c3 == 'S') return KEY_F4;
+            if (c3 == 'U') return KEY_F10;
+        } else if (c2 == '2' && getchar() == '~') return KEY_INSERT;
+        return KEY_ESC;
+    } else if (c == '\n') return KEY_ENTER;
+    else if (c == 127) return KEY_BACKSPACE;
+    return c;
+}
+
+// UI drawing
+void draw_header() {
+    printf("\x1b[1;1H%s%s texpro: %s %s%s%s", COLOR_HEADER, COLOR_WHITE, filename, 
+           view_mode ? "[View]" : "[Edit]", view_mode ? "" : (insert_mode ? "[Ins]" : "[Ovr]"), 
+           modified ? "[+]" : "", COLOR_RESET);
+    printf("\x1b[K");
+}
+
+void draw_footer() {
+    printf("\x1b[%d;1H\x1b[37m\x1b[44m "
+           "1\x1b[90;106m Help "
+           "3\x1b[90;106m View "
+           "4\x1b[90;106m Edit "
+           "10\x1b[90;106m Exit %s", rows, COLOR_RESET);
+    printf("\x1b[K");
+}
+
+void draw_menu(int selected) {
+    const char *items[] = {"Edit Mode", "Save", "Exit"};
+    int item_count = 3;
+    int width = 20;
+    int start_row = 2;
+    int start_col = (cols - width) / 2;
+
+    printf("\x1b[46m");
+    for (int i = 0; i < item_count; i++) {
+        if (i == selected) {
+            printf("\x1b[%d;%dH\x1b[90;47m%-*s", start_row + i, start_col, width - 2, items[i]);
+        } else {
+            printf("\x1b[%d;%dH\x1b[97;46m%-*s", start_row + i, start_col, width - 2, items[i]);
+        }
+    }
+    printf(COLOR_RESET);
+}
+
+void update_line(int line) {
+    int buf_idx = scroll_y + line;
+    int screen_row = line + 2;
+    printf("\x1b[%d;1H\x1b[K", screen_row);
+    if (buf_idx >= buffer.count) return;
+
+    Line *l = &buffer.lines[buf_idx];
+    int start = scroll_x;
+    int to_display = l->len - start > cols ? cols : l->len - start;
+    if (start < l->len) {
+        printf("\x1b[%d;1H%s%.*s%s", screen_row, COLOR_TEXT, to_display, l->data + start, COLOR_RESET);
+    }
+}
+
+void draw_text() {
+    printf("\x1b[2;1H");
+    for (int i = 0; i < rows - 2; i++) {
+        update_line(i);
+        printf("\n");
+    }
+    // Clear cursor trail by redrawing old position
+    if (last_cursor_x >= 0 && last_cursor_y >= 0 && !view_mode) {
+        int old_y = last_cursor_y - scroll_y;
+        if (old_y >= 0 && old_y < rows - 2) {
+            Line *l = &buffer.lines[last_cursor_y];
+            int x = last_cursor_x - scroll_x;
+            char c = (x >= 0 && x < l->len) ? l->data[x] : ' ';
+            if (x >= 0 && x < cols) {
+                printf("\x1b[%d;%dH%s%c%s", old_y + 2, x + 1, COLOR_TEXT, c, COLOR_RESET);
+            }
+        }
+    }
+    // Draw new cursor
+    if (!view_mode) {
+        Line *l = &buffer.lines[cursor_y];
+        int x = cursor_x - scroll_x;
+        char c = (cursor_x < l->len) ? l->data[cursor_x] : ' ';
+        if (x >= 0 && x < cols && cursor_y - scroll_y >= 0 && cursor_y - scroll_y < rows - 2) {
+            printf("\x1b[%d;%dH\x1b[7m%c\x1b[0m", cursor_y - scroll_y + 2, x + 1, c);
+        }
+    }
+    last_cursor_x = cursor_x;
+    last_cursor_y = cursor_y;
+}
+
+// Editing functions
+void insert_char(char c) {
+    if (view_mode) return;
+    Line *l = &buffer.lines[cursor_y];
+    if (c == '\n') {
+        if (buffer.count >= buffer.capacity) grow_buffer();
+        memmove(&buffer.lines[cursor_y + 2], &buffer.lines[cursor_y + 1], 
+                (buffer.count - cursor_y - 1) * sizeof(Line));
+        buffer.count++;
+        Line *new_line = &buffer.lines[cursor_y + 1];
+        size_t tail_len = l->len - cursor_x;
+        new_line->data = malloc(tail_len + 1);
+        new_line->capacity = tail_len + 1;
+        new_line->len = tail_len;
+        if (tail_len > 0) memcpy(new_line->data, l->data + cursor_x, tail_len);
+        l->len = cursor_x;
+        cursor_y++;
+        cursor_x = 0;
+        modified = 1;
+        draw_text();
+    } else {
+        if (l->len >= l->capacity) {
+            l->capacity = l->capacity ? l->capacity * 2 : 16;
+            l->data = realloc(l->data, l->capacity);
+        }
+        if (insert_mode) {
+            memmove(l->data + cursor_x + 1, l->data + cursor_x, l->len - cursor_x);
+            l->data[cursor_x] = c;
+            l->len++;
+        } else if (cursor_x < l->len) {
+            l->data[cursor_x] = c;
+        } else {
+            l->data[cursor_x] = c;
+            l->len = cursor_x + 1;
+        }
+        modified = 1;
+        update_line(cursor_y - scroll_y);
+    }
+}
+
+void delete_char() {
+    if (view_mode) return;
+    Line *l = &buffer.lines[cursor_y];
+    if (cursor_x < l->len) {
+        memmove(l->data + cursor_x, l->data + cursor_x + 1, l->len - cursor_x - 1);
+        l->len--;
+        modified = 1;
+        update_line(cursor_y - scroll_y);
+    } else if (cursor_y + 1 < buffer.count) {
+        Line *next = &buffer.lines[cursor_y + 1];
+        if (l->len + next->len >= l->capacity) {
+            l->capacity = l->len + next->len + 1;
+            l->data = realloc(l->data, l->capacity);
+        }
+        memcpy(l->data + l->len, next->data, next->len);
+        l->len += next->len;
+        memmove(&buffer.lines[cursor_y + 1], &buffer.lines[cursor_y + 2], 
+                (buffer.count - cursor_y - 2) * sizeof(Line));
+        buffer.count--;
+        free(next->data);
+        modified = 1;
+        draw_text();
+    }
+}
+
+void save_file() {
+    if (fd == -1 || view_mode) return;
+    lseek(fd, 0, SEEK_SET);
+    for (size_t i = 0; i < buffer.count; i++) {
+        write(fd, buffer.lines[i].data, buffer.lines[i].len);
+        if (i < buffer.count - 1) write(fd, "\n", 1);
+    }
+    ftruncate(fd, file_size);
+    modified = 0;
+}
+
+void move_cursor_word(int direction) {
+    Line *l = &buffer.lines[cursor_y];
+    int x = cursor_x;
+    if (direction < 0) {
+        while (x > 0 && isspace(l->data[x - 1])) x--;
+        while (x > 0 && !isspace(l->data[x - 1])) x--;
+    } else {
+        while (x < l->len && !isspace(l->data[x])) x++;
+        while (x < l->len && isspace(l->data[x])) x++;
+    }
+    cursor_x = x;
+    if (cursor_x < scroll_x) {
+        scroll_x = cursor_x;
+        draw_text();
+    } else if (cursor_x >= scroll_x + cols) {
+        scroll_x = cursor_x - cols + 1;
+        draw_text();
+    }
+}
+
+// Menu handling
+int handle_menu() {
+    int selected = 0;
+    while (1) {
+        draw_header();
+        draw_text();
+        draw_menu(selected);
+        int c = get_input();
+        if (c == KEY_UP && selected > 0) selected--;
+        else if (c == KEY_DOWN && selected < 2) selected++;
+        else if (c == KEY_ENTER) {
+            if (selected == 0) view_mode = 0;
+            else if (selected == 1) save_file();
+            else if (selected == 2) return 1;
+            break;
+        } else if (c == KEY_ESC) break;
+    }
+    return 0;
+}
+
+// Main
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: texpro <filename>\n");
+        return 1;
+    }
+
+    strncpy(filename, argv[1], sizeof(filename) - 1);
+    filename[sizeof(filename) - 1] = 0;
+
+    struct stat st;
+    if (stat(filename, &st) == 0) {
+        file_size = st.st_size;
+        fd = open(filename, O_RDWR);
+    } else {
+        fd = open(filename, O_RDWR | O_CREAT, 0644);
+        file_size = 0;
+    }
+    if (fd == -1) {
+        perror("Failed to open file");
+        return 1;
+    }
+
+    enable_raw_mode();
+    atexit(disable_raw_mode);
+    signal(SIGWINCH, handle_resize);
+    get_window_size(&rows, &cols);
+
+    load_file();
+
+    printf("\x1b[?1049h");
+    while (1) {
+        if (resize_flag) {
+            get_window_size(&rows, &cols);
+            if (cursor_y >= rows - 2) cursor_y = rows - 3;
+            resize_flag = 0;
+            draw_text();
+        }
+
+        draw_header();
+        draw_text();
+        draw_footer();
+
+        int c = get_input();
+        if (c == KEY_F1) {
+            // Help (placeholder)
+        } else if (c == KEY_F3) {
+            view_mode = 1;
+            draw_header();
+        } else if (c == KEY_F4) {
+            view_mode = 0;
+            draw_header();
+        } else if (c == KEY_F10) {
+            if (!modified || handle_menu()) break;
+        } else if (c == KEY_UP) {
+            if (cursor_y > 0) {
+                cursor_y--;
+                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                if (cursor_y < scroll_y) {
+                    scroll_y--;
+                    draw_text();
+                }
+            }
+        } else if (c == KEY_DOWN) {
+            if (cursor_y + 1 < buffer.count) {
+                cursor_y++;
+                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                if (cursor_y >= scroll_y + rows - 2) {
+                    scroll_y++;
+                    draw_text();
+                }
+            }
+        } else if (c == KEY_LEFT) {
+            if (cursor_x > 0) {
+                cursor_x--;
+                if (cursor_x < scroll_x) {
+                    scroll_x--;
+                    draw_text();
+                }
+            }
+        } else if (c == KEY_RIGHT) {
+            Line *l = &buffer.lines[cursor_y];
+            if (cursor_x < l->len) {
+                cursor_x++;
+                if (cursor_x >= scroll_x + cols) {
+                    scroll_x++;
+                    draw_text();
+                }
+            }
+        } else if (c == KEY_CTRL_LEFT && !view_mode) {
+            move_cursor_word(-1);
+        } else if (c == KEY_CTRL_RIGHT && !view_mode) {
+            move_cursor_word(1);
+        } else if (c == KEY_PGUP) {
+            if (scroll_y > 0) {
+                scroll_y -= rows - 2;
+                cursor_y -= rows - 2;
+                if (scroll_y < 0) scroll_y = 0;
+                if (cursor_y < 0) cursor_y = 0;
+                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                draw_text();
+            }
+        } else if (c == KEY_PGDOWN) {
+            if (scroll_y + rows - 2 < buffer.count) {
+                scroll_y += rows - 2;
+                cursor_y += rows - 2;
+                if (cursor_y >= buffer.count) cursor_y = buffer.count - 1;
+                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                draw_text();
+            }
+        } else if (c == KEY_HOME) {
+            cursor_x = 0;
+            scroll_x = 0;
+            draw_text();
+        } else if (c == KEY_END) {
+            Line *l = &buffer.lines[cursor_y];
+            cursor_x = l->len;
+            if (cursor_x >= cols) scroll_x = cursor_x - cols + 1;
+            else scroll_x = 0;
+            draw_text();
+        } else if (!view_mode) {
+            if (c == KEY_INSERT) {
+                insert_mode = !insert_mode;
+                draw_header();
+            } else if (c == KEY_BACKSPACE) {
+                if (cursor_x > 0) {
+                    cursor_x--;
+                    delete_char();
+                } else if (cursor_y > 0) {
+                    Line *prev = &buffer.lines[cursor_y - 1];
+                    cursor_x = prev->len;
+                    delete_char();
+                    cursor_y--;
+                }
+            } else if (c == KEY_DELETE) {
+                delete_char();
+            } else if (c >= 32 && c <= 126) {
+                insert_char(c);
+                cursor_x++;
+                if (cursor_x >= scroll_x + cols) {
+                    scroll_x++;
+                    draw_text();
+                }
+            } else if (c == KEY_ENTER) {
+                insert_char('\n');
+            }
+        }
+    }
+
+    if (modified) save_file();
+    close(fd);
+    free_buffer();
+    printf("\x1b[?1049l\x1b[2J\x1b[H");
+    return 0;
+}

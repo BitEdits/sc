@@ -1,6 +1,6 @@
 // menus.c
 
-#include "socha.h"
+#include "sokhatsky.h"
 
 void draw_panel_border(int start_col, int start_row, int width, int height, char *color) {
     if (color) printf("%s",color);
