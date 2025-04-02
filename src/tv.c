@@ -116,18 +116,83 @@ uint32_t utf8_to_codepoint(const char *data, size_t pos, size_t len, size_t *byt
 }
 
 int utf8_char_width(uint32_t cp) {
-    // Mathematical Operators (U+2200–U+22FF), Arrows (U+2190–U+21FF), Greek (U+0370–U+03FF), etc.
-    if (cp >= 0x2190 && cp <= 0x21FF) return 1;  // Arrows (e.g., →)
-    if (cp >= 0x2200 && cp <= 0x22FF) return 1;  // Mathematical Operators (e.g., ∀, ⊕, ∧, ∨)
-    if (cp >= 0x0370 && cp <= 0x03FF) return 1;  // Greek (e.g., Π)
-    if (cp >= 0x0400 && cp <= 0x04FF) return 1;  // Cyrillic (e.g., ф, о, р, м, а, л, і, з, ц, я)
-    if (cp >= 0x2070 && cp <= 0x209F) return 1;  // Superscripts/Subscripts (e.g., u₀)
-    if (cp >= 0x0300 && cp <= 0x036F) return 0;  // Combining Diacritical Marks
-    if (cp >= 0x2000 && cp <= 0x206F) return 1;  // General Punctuation (e.g., em dash)
-    if (cp >= 0x3000 && cp <= 0x303F) return 2;  // CJK Symbols (double-width)
-    if (cp >= 0xFF00 && cp <= 0xFFEF) return 2;  // Fullwidth forms
-    if (cp >= 0x1F000 && cp <= 0x1FFFF) return 2; // Emoji and other symbols
-    return (cp < 0x80) ? 1 : 1;  // Default: ASCII and most others are 1
+    if (cp >= 0x0000 && cp <= 0x007F) return 1;  // Basic Latin (ASCII, e.g., a, 1, #)
+    if (cp >= 0x0080 && cp <= 0x00FF) return 1;  // Latin-1 Supplement (e.g., é, ñ)
+    if (cp >= 0x0100 && cp <= 0x017F) return 1;  // Latin Extended-A (e.g., ě, ł)
+    if (cp >= 0x0180 && cp <= 0x024F) return 1;  // Latin Extended-B (e.g., ƀ, ɏ)
+    if (cp >= 0x0250 && cp <= 0x02AF) return 1;  // IPA Extensions (e.g., ɐ, ʯ)
+    if (cp >= 0x0300 && cp <= 0x036F) return 0;  // Combining Diacritical Marks (e.g., ◌́, ◌̈)
+    if (cp >= 0x0370 && cp <= 0x03FF) return 1;  // Greek and Coptic (e.g., π, Ω)
+    if (cp >= 0x0400 && cp <= 0x04FF) return 1;  // Cyrillic (e.g., б, я)
+    if (cp >= 0x0500 && cp <= 0x052F) return 1;  // Cyrillic Supplement (e.g., ԯ, Ԯ)
+    if (cp >= 0x0530 && cp <= 0x058F) return 1;  // Armenian (e.g., Ա, Ֆ)
+    if (cp >= 0x0590 && cp <= 0x05FF) return 1;  // Hebrew (e.g., א, ת)
+    if (cp >= 0x0600 && cp <= 0x06FF) return 1;  // Arabic (e.g., أ, ي)
+    if (cp >= 0x0700 && cp <= 0x074F) return 1;  // Syriac (e.g., ܐ, ܯ)
+    if (cp >= 0x0780 && cp <= 0x07BF) return 1;  // Thaana (e.g., ހ, �)
+    if (cp >= 0x0900 && cp <= 0x097F) return 1;  // Devanagari (e.g., अ, ह)
+    if (cp >= 0x0980 && cp <= 0x09FF) return 1;  // Bengali (e.g., অ, হ)
+    if (cp >= 0x0A00 && cp <= 0x0A7F) return 1;  // Gurmukhi (e.g., ਅ, ਹ)
+    if (cp >= 0x0A80 && cp <= 0x0AFF) return 1;  // Gujarati (e.g., અ, હ)
+    if (cp >= 0x0B00 && cp <= 0x0B7F) return 1;  // Oriya (e.g., ଅ, ହ)
+    if (cp >= 0x0B80 && cp <= 0x0BFF) return 1;  // Tamil (e.g., அ, ஹ)
+    if (cp >= 0x0C00 && cp <= 0x0C7F) return 1;  // Telugu (e.g., అ, హ)
+    if (cp >= 0x0C80 && cp <= 0x0CFF) return 1;  // Kannada (e.g., ಅ, ಹ)
+    if (cp >= 0x0D00 && cp <= 0x0D7F) return 1;  // Malayalam (e.g., അ, ഹ)
+    if (cp >= 0x0E00 && cp <= 0x0E7F) return 1;  // Thai (e.g., ก, ๏)
+    if (cp >= 0x0E80 && cp <= 0x0EFF) return 1;  // Lao (e.g., ກ, ໝ)
+    if (cp >= 0x10A0 && cp <= 0x10FF) return 1;  // Georgian (e.g., Ⴀ, ჿ)
+    if (cp >= 0x1100 && cp <= 0x11FF) return 2;  // Hangul Jamo (e.g., ᄀ, ᇿ)
+    if (cp >= 0x1E00 && cp <= 0x1EFF) return 1;  // Latin Extended Additional (e.g., Ḁ, ỿ)
+    if (cp >= 0x1F00 && cp <= 0x1FFF) return 1;  // Greek Extended (e.g., ἀ, ῾)
+    if (cp >= 0x2000 && cp <= 0x206F) return 1;  // General Punctuation (e.g., —,  )
+    if (cp >= 0x2070 && cp <= 0x209F) return 1;  // Superscripts and Subscripts (e.g., ⁰, ₜ)
+    if (cp >= 0x20A0 && cp <= 0x20CF) return 1;  // Currency Symbols (e.g., €, ₿)
+    if (cp >= 0x2100 && cp <= 0x214F) return 1;  // Letterlike Symbols (e.g., ℀, ℏ)
+    if (cp >= 0x2150 && cp <= 0x218F) return 1;  // Number Forms (e.g., ⅐, ↉)
+    if (cp >= 0x2190 && cp <= 0x21FF) return 1;  // Arrows (e.g., →, ↻)
+    if (cp >= 0x2200 && cp <= 0x22FF) return 1;  // Mathematical Operators (e.g., ∀, ∮)
+    if (cp >= 0x2300 && cp <= 0x23FF) return 1;  // Miscellaneous Technical (e.g., ⌂, ⏿)
+    if (cp >= 0x2460 && cp <= 0x24FF) return 1;  // Enclosed Alphanumerics (e.g., ①, ⓿)
+    if (cp >= 0x2500 && cp <= 0x257F) return 1;  // Box Drawing (e.g., ─, ╿)
+    if (cp >= 0x2580 && cp <= 0x259F) return 1;  // Block Elements (e.g., ▀, ▟)
+    if (cp >= 0x25A0 && cp <= 0x25FF) return 1;  // Geometric Shapes (e.g., ■, ◿)
+    if (cp >= 0x2600 && cp <= 0x26FF) return 1;  // Miscellaneous Symbols (e.g., ☀, ⛿)
+    if (cp >= 0x2700 && cp <= 0x27BF) return 1;  // Dingbats (e.g., ✀, ➿)
+    if (cp >= 0x2E80 && cp <= 0x2EFF) return 2;  // CJK Radicals Supplement (e.g., ⺀, �)
+    if (cp >= 0x2F00 && cp <= 0x2FDF) return 2;  // Kangxi Radicals (e.g., ⼀, �)
+    if (cp >= 0x3000 && cp <= 0x303F) return 2;  // CJK Symbols and Punctuation (e.g., 、, 〿)
+    if (cp >= 0x3040 && cp <= 0x309F) return 2;  // Hiragana (e.g., ぁ, ゟ)
+    if (cp >= 0x30A0 && cp <= 0x30FF) return 2;  // Katakana (e.g., ァ, ヿ)
+    if (cp >= 0x3100 && cp <= 0x312F) return 2;  // Bopomofo (e.g., ㄅ, ㄯ)
+    if (cp >= 0x3130 && cp <= 0x318F) return 2;  // Hangul Compatibility Jamo (e.g., ㄱ, ㅿ)
+    if (cp >= 0x31F0 && cp <= 0x31FF) return 2;  // Katakana Phonetic Extensions (e.g., ㇰ, ㇿ)
+    if (cp >= 0x3400 && cp <= 0x4DBF) return 2;  // CJK Unified Ideographs Ext. A (e.g., 㐀, 䶿)
+    if (cp >= 0x4E00 && cp <= 0x9FFF) return 2;  // CJK Unified Ideographs (e.g., 一, 鿿)
+    if (cp >= 0xA000 && cp <= 0xA48F) return 2;  // Yi Syllables (e.g., ꀀ, �)
+    if (cp >= 0xA490 && cp <= 0xA4CF) return 2;  // Yi Radicals (e.g., ꒐, �)
+    if (cp >= 0xAC00 && cp <= 0xD7AF) return 2;  // Hangul Syllables (e.g., 가, �)
+    if (cp >= 0xD800 && cp <= 0xDFFF) return 0;  // Surrogate pairs (invalid in UTF-8)
+    if (cp >= 0xF900 && cp <= 0xFAFF) return 2;  // CJK Compatibility Ideographs (e.g., 豈, �)
+    if (cp >= 0xFB00 && cp <= 0xFB4F) return 1;  // Alphabetic Presentation Forms (e.g., ﬀ, ﭏ)
+    if (cp >= 0xFE00 && cp <= 0xFE0F) return 0;  // Variation Selectors (e.g., ︀, ️)
+    if (cp >= 0xFE10 && cp <= 0xFE1F) return 2;  // Vertical Forms (e.g., ︐, �)
+    if (cp >= 0xFE30 && cp <= 0xFE4F) return 2;  // CJK Compatibility Forms (e.g., ︰, ﹏)
+    if (cp >= 0xFF00 && cp <= 0xFFEF) return 2;  // Halfwidth and Fullwidth Forms (e.g., ！, ｯ)
+    if (cp >= 0x1D400 && cp <= 0x1D7FF) return 1; // Mathematical Alphanumeric Symbols (e.g., 𝐀, 𝟿)
+    if (cp >= 0x1F000 && cp <= 0x1F02F) return 2; // Mahjong Tiles (e.g., 🀀, �)
+    if (cp >= 0x1F030 && cp <= 0x1F09F) return 2; // Domino Tiles (e.g., 🀰, �)
+    if (cp >= 0x1F0A0 && cp <= 0x1F0FF) return 2; // Playing Cards (e.g., 🂠, �)
+    if (cp >= 0x1F100 && cp <= 0x1F1FF) return 2; // Enclosed Alphanumeric Supplement (e.g., 🄀, 🇿)
+    if (cp >= 0x1F300 && cp <= 0x1F5FF) return 2; // Miscellaneous Symbols and Pictographs (e.g., 🌀, 🗿)
+    if (cp >= 0x1F600 && cp <= 0x1F64F) return 2; // Emoticons (e.g., 😀, 🙏)
+    if (cp >= 0x1F650 && cp <= 0x1F67F) return 2; // Ascending Triangle (e.g., ▲)
+    if (cp >= 0x1F680 && cp <= 0x1F6FF) return 2; // Transport and Map Symbols (e.g., 🚀, 🗺)
+    if (cp >= 0x1F700 && cp <= 0x1F77F) return 2; // Alchemical Symbols (e.g., 🜀, �)
+    if (cp >= 0x1F900 && cp <= 0x1F9FF) return 2; // Supplemental Symbols and Pictographs (e.g., 🤀, 🧿)
+
+    // Default: assume single-width for unhandled ranges
+    return 1;
 }
 
 size_t utf8_display_length(const char *data, size_t len) {
@@ -216,17 +281,42 @@ void load_file() {
         ssize_t bytes = pread(fd, chunk, CHUNK_SIZE, offset);
         if (bytes <= 0) break;
 
-        for (size_t i = 0; i < bytes; i++) {
+        for (size_t i = 0; i < (size_t)bytes; i++) {
             if (chunk[i] == '\n' || line_len >= MAX_LINE_SIZE) {
                 add_line(line_start, line_len);
-                line_start = chunk + i + 1;
+                line_start = chunk + i + 1;  // Point to the next byte after newline or split
                 line_len = 0;
+                // If we're at the end of the chunk, don't process further here
+                if (i == (size_t)bytes - 1) {
+                    line_start = chunk;  // Reset to start of next chunk
+                    break;
+                }
             } else {
                 line_len++;
+                // If this is the last byte and no newline, carry over to next chunk
+                if (i == (size_t)bytes - 1 && offset + bytes < file_size) {
+                    // Copy partial line to a temporary buffer if it spans chunks
+                    char *temp = malloc(line_len);
+                    memcpy(temp, line_start, line_len);
+                    offset += bytes;
+                    ssize_t next_bytes = pread(fd, chunk, CHUNK_SIZE, offset);
+                    if (next_bytes > 0) {
+                        size_t temp_len = line_len;
+                        line_start = chunk;
+                        line_len = 0;
+                        memcpy(chunk, temp, temp_len);  // Prepend previous data
+                        line_start = chunk + temp_len;  // Adjust start
+                        bytes = next_bytes;
+                        i = temp_len - 1;  // Continue from where we left off
+                    }
+                    free(temp);
+                }
             }
         }
+        // Handle any remaining data at the end of the chunk
         if (line_len > 0 && offset + bytes >= file_size) {
             add_line(line_start, line_len);
+            line_len = 0;
         }
         offset += bytes;
     }
