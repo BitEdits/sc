@@ -17,6 +17,7 @@
 #define COLOR_TEXT "\x1b[1;96;104m"
 #define COLOR_RESET "\x1b[30;40m"
 #define COLOR_WHITE "\x1b[1;37m"
+#define COLOR_LIGHT_BLUE "\x1b[104m"
 
 // Key codes from socha.h
 #define KEY_ESC    1000
@@ -34,6 +35,7 @@
 #define KEY_F1     1011
 #define KEY_F3     1013
 #define KEY_F4     1014
+#define KEY_F5     1015
 #define KEY_F10    1020
 #define KEY_CTRL_LEFT  1025
 #define KEY_CTRL_RIGHT 1026
@@ -52,6 +54,7 @@ off_t file_size = 0;
 int view_mode = 0;  // 0 = edit (default), 1 = view
 int modified = 0;
 int insert_mode = 1;  // 1 = insert, 0 = replace
+int show_blanks = 1;
 
 // Line structure
 typedef struct Line {
@@ -90,6 +93,17 @@ void delete_char();
 void save_file();
 void move_cursor_word(int direction);
 void free_buffer();
+
+size_t utf8_display_length(const char *data, size_t len) {
+    size_t disp_len = 0;
+    for (size_t i = 0; i < len;) {
+        if ((data[i] & 0xC0) != 0x80) {  // Not a continuation byte
+            disp_len++;
+        }
+        i += (data[i] & 0x80) ? ((data[i] & 0xE0) == 0xC0 ? 2 : ((data[i] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+    }
+    return disp_len;
+}
 
 // Line buffer functions
 void init_buffer() {
@@ -206,6 +220,7 @@ int get_input() {
             if (c3 == 'P') return KEY_F1;
             if (c3 == 'R') return KEY_F3;
             if (c3 == 'S') return KEY_F4;
+            if (c3 == 'T') return KEY_F5;
             if (c3 == 'U') return KEY_F10;
         } else if (c2 == '2' && getchar() == '~') return KEY_INSERT;
         return KEY_ESC;
@@ -260,6 +275,11 @@ void update_line(int line) {
     int to_display = l->len - start > cols ? cols : l->len - start;
     if (start < l->len) {
         printf("\x1b[%d;1H%s%.*s%s", screen_row, COLOR_TEXT, to_display, l->data + start, COLOR_RESET);
+    }
+    if (show_blanks && to_display < cols) {
+        printf("%s%*s%s", COLOR_LIGHT_BLUE, cols - to_display, "", COLOR_RESET);
+    } else {
+        printf("%s", COLOR_RESET);
     }
 }
 
@@ -462,6 +482,9 @@ int main(int argc, char *argv[]) {
         } else if (c == KEY_F4) {
             view_mode = 0;
             draw_header();
+        } else if (c == KEY_F5) {
+            show_blanks = !show_blanks;
+            draw_text();
         } else if (c == KEY_F10) {
             if (!modified || handle_menu()) break;
         } else if (c == KEY_UP) {
