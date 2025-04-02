@@ -1,6 +1,6 @@
 // sc.c
 
-#include "sokhaysky.h"
+#include "sokhatsky.h"
 
 // Глобальні змінні
 Panel left_panel, right_panel;
