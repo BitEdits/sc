@@ -731,7 +731,7 @@ int handle_menu() {
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: texpro <filename>\n");
+        printf("Usage: tv <filename>\n");
         return 1;
     }
 
