@@ -232,8 +232,9 @@ int get_input() {
 
 // UI drawing
 void draw_header() {
-    printf("\x1b[1;1H%s%s texpro: %s %s%s%s", COLOR_HEADER, COLOR_WHITE, filename, 
-           view_mode ? "[View]" : "[Edit]", view_mode ? "" : (insert_mode ? "[Ins]" : "[Ovr]"), 
+    printf("\x1b[1;1H%s%s texpro: %s %s%s%s%s", COLOR_HEADER, COLOR_WHITE, filename, 
+           view_mode ? "[View]" : "[Edit]",
+           view_mode ? "" : (insert_mode ? "[Ins]" : "[Ovr]"), 
            modified ? "[+]" : "", COLOR_RESET);
     printf("\x1b[K");
 }
