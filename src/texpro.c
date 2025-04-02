@@ -1,5 +1,3 @@
-// texpro.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,13 +52,14 @@ off_t file_size = 0;
 int view_mode = 0;  // 0 = edit (default), 1 = view
 int modified = 0;
 int insert_mode = 1;  // 1 = insert, 0 = replace
-int show_blanks = 1;
+int show_blanks = 1;  // Toggle for blank space display (F5)
 
 // Line structure
 typedef struct Line {
-    char *data;         // Line content
-    size_t len;         // Length of line (excluding \n)
+    char *data;         // Line content (UTF-8)
+    size_t len;         // Byte length of line (excluding \n)
     size_t capacity;    // Allocated size
+    size_t disp_len;    // Display length (number of columns)
 } Line;
 
 // Line buffer
@@ -71,9 +70,21 @@ typedef struct {
 } LineBuffer;
 
 LineBuffer buffer = {0};
-int cursor_x = 0, cursor_y = 0;  // Cursor position
-int scroll_x = 0, scroll_y = 0;  // Scroll offsets
+int cursor_x = 0, cursor_y = 0;  // Cursor position (in display columns)
+int scroll_x = 0, scroll_y = 0;  // Scroll offsets (in display columns)
 int last_cursor_x = -1, last_cursor_y = -1;  // For cursor trail fix
+
+// UTF-8 display width calculation (minimal)
+size_t utf8_display_length(const char *data, size_t len) {
+    size_t disp_len = 0;
+    for (size_t i = 0; i < len;) {
+        if ((data[i] & 0xC0) != 0x80) {  // Not a continuation byte
+            disp_len++;
+        }
+        i += (data[i] & 0x80) ? ((data[i] & 0xE0) == 0xC0 ? 2 : ((data[i] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+    }
+    return disp_len;
+}
 
 // Prototypes
 void enable_raw_mode();
@@ -94,17 +105,6 @@ void save_file();
 void move_cursor_word(int direction);
 void free_buffer();
 
-size_t utf8_display_length(const char *data, size_t len) {
-    size_t disp_len = 0;
-    for (size_t i = 0; i < len;) {
-        if ((data[i] & 0xC0) != 0x80) {  // Not a continuation byte
-            disp_len++;
-        }
-        i += (data[i] & 0x80) ? ((data[i] & 0xE0) == 0xC0 ? 2 : ((data[i] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
-    }
-    return disp_len;
-}
-
 // Line buffer functions
 void init_buffer() {
     buffer.lines = malloc(sizeof(Line) * 1024);
@@ -124,6 +124,7 @@ void add_line(char *data, size_t len) {
     line->capacity = len + 1;
     memcpy(line->data, data, len);
     line->len = len;
+    line->disp_len = utf8_display_length(data, len);
 }
 
 void load_file() {
@@ -242,6 +243,7 @@ void draw_footer() {
            "1\x1b[90;106m Help "
            "3\x1b[90;106m View "
            "4\x1b[90;106m Edit "
+           "5\x1b[90;106m Blanks "
            "10\x1b[90;106m Exit %s", rows, COLOR_RESET);
     printf("\x1b[K");
 }
@@ -271,13 +273,26 @@ void update_line(int line) {
     if (buf_idx >= buffer.count) return;
 
     Line *l = &buffer.lines[buf_idx];
-    int start = scroll_x;
-    int to_display = l->len - start > cols ? cols : l->len - start;
-    if (start < l->len) {
-        printf("\x1b[%d;1H%s%.*s%s", screen_row, COLOR_TEXT, to_display, l->data + start, COLOR_RESET);
+    size_t start = 0, byte_start = 0;
+    size_t disp_pos = 0;
+    // Find byte offset for scroll_x
+    for (; byte_start < l->len && disp_pos < scroll_x;) {
+        if ((l->data[byte_start] & 0xC0) != 0x80) disp_pos++;
+        byte_start += (l->data[byte_start] & 0x80) ? ((l->data[byte_start] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_start] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
     }
-    if (show_blanks && to_display < cols) {
-        printf("%s%*s%s", COLOR_LIGHT_BLUE, cols - to_display, "", COLOR_RESET);
+    start = byte_start;
+    size_t disp_len = 0;
+    size_t byte_end = start;
+    // Calculate display length up to cols
+    while (byte_end < l->len && disp_len < cols) {
+        if ((l->data[byte_end] & 0xC0) != 0x80) disp_len++;
+        byte_end += (l->data[byte_end] & 0x80) ? ((l->data[byte_end] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_end] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+    }
+    if (start < l->len) {
+        printf("\x1b[%d;1H%s%.*s", screen_row, COLOR_TEXT, (int)(byte_end - start), l->data + start);
+    }
+    if (show_blanks && disp_len < cols) {
+        printf("%s%*s%s", COLOR_LIGHT_BLUE, (int)(cols - disp_len), "", COLOR_RESET);
     } else {
         printf("%s", COLOR_RESET);
     }
@@ -289,13 +304,17 @@ void draw_text() {
         update_line(i);
         printf("\n");
     }
-    // Clear cursor trail by redrawing old position
+    // Clear cursor trail
     if (last_cursor_x >= 0 && last_cursor_y >= 0 && !view_mode) {
         int old_y = last_cursor_y - scroll_y;
         if (old_y >= 0 && old_y < rows - 2) {
             Line *l = &buffer.lines[last_cursor_y];
+            size_t disp_pos = 0, byte_pos = 0;
+            for (; byte_pos < l->len && disp_pos < last_cursor_x; byte_pos++) {
+                if ((l->data[byte_pos] & 0xC0) != 0x80) disp_pos++;
+            }
             int x = last_cursor_x - scroll_x;
-            char c = (x >= 0 && x < l->len) ? l->data[x] : ' ';
+            char c = (byte_pos < l->len) ? l->data[byte_pos] : ' ';
             if (x >= 0 && x < cols) {
                 printf("\x1b[%d;%dH%s%c%s", old_y + 2, x + 1, COLOR_TEXT, c, COLOR_RESET);
             }
@@ -304,8 +323,12 @@ void draw_text() {
     // Draw new cursor
     if (!view_mode) {
         Line *l = &buffer.lines[cursor_y];
+        size_t disp_pos = 0, byte_pos = 0;
+        for (; byte_pos < l->len && disp_pos < cursor_x; byte_pos++) {
+            if ((l->data[byte_pos] & 0xC0) != 0x80) disp_pos++;
+        }
         int x = cursor_x - scroll_x;
-        char c = (cursor_x < l->len) ? l->data[cursor_x] : ' ';
+        char c = (byte_pos < l->len) ? l->data[byte_pos] : ' ';
         if (x >= 0 && x < cols && cursor_y - scroll_y >= 0 && cursor_y - scroll_y < rows - 2) {
             printf("\x1b[%d;%dH\x1b[7m%c\x1b[0m", cursor_y - scroll_y + 2, x + 1, c);
         }
@@ -324,12 +347,18 @@ void insert_char(char c) {
                 (buffer.count - cursor_y - 1) * sizeof(Line));
         buffer.count++;
         Line *new_line = &buffer.lines[cursor_y + 1];
-        size_t tail_len = l->len - cursor_x;
+        size_t disp_pos = 0, byte_pos = 0;
+        for (; byte_pos < l->len && disp_pos < cursor_x; byte_pos++) {
+            if ((l->data[byte_pos] & 0xC0) != 0x80) disp_pos++;
+        }
+        size_t tail_len = l->len - byte_pos;
         new_line->data = malloc(tail_len + 1);
         new_line->capacity = tail_len + 1;
         new_line->len = tail_len;
-        if (tail_len > 0) memcpy(new_line->data, l->data + cursor_x, tail_len);
-        l->len = cursor_x;
+        if (tail_len > 0) memcpy(new_line->data, l->data + byte_pos, tail_len);
+        new_line->disp_len = utf8_display_length(new_line->data, tail_len);
+        l->len = byte_pos;
+        l->disp_len = cursor_x;
         cursor_y++;
         cursor_x = 0;
         modified = 1;
@@ -339,16 +368,21 @@ void insert_char(char c) {
             l->capacity = l->capacity ? l->capacity * 2 : 16;
             l->data = realloc(l->data, l->capacity);
         }
-        if (insert_mode) {
-            memmove(l->data + cursor_x + 1, l->data + cursor_x, l->len - cursor_x);
-            l->data[cursor_x] = c;
-            l->len++;
-        } else if (cursor_x < l->len) {
-            l->data[cursor_x] = c;
-        } else {
-            l->data[cursor_x] = c;
-            l->len = cursor_x + 1;
+        size_t disp_pos = 0, byte_pos = 0;
+        for (; byte_pos < l->len && disp_pos < cursor_x; byte_pos++) {
+            if ((l->data[byte_pos] & 0xC0) != 0x80) disp_pos++;
         }
+        if (insert_mode) {
+            memmove(l->data + byte_pos + 1, l->data + byte_pos, l->len - byte_pos);
+            l->data[byte_pos] = c;
+            l->len++;
+        } else if (byte_pos < l->len) {
+            l->data[byte_pos] = c;
+        } else {
+            l->data[byte_pos] = c;
+            l->len = byte_pos + 1;
+        }
+        l->disp_len = utf8_display_length(l->data, l->len);
         modified = 1;
         update_line(cursor_y - scroll_y);
     }
@@ -357,9 +391,15 @@ void insert_char(char c) {
 void delete_char() {
     if (view_mode) return;
     Line *l = &buffer.lines[cursor_y];
-    if (cursor_x < l->len) {
-        memmove(l->data + cursor_x, l->data + cursor_x + 1, l->len - cursor_x - 1);
-        l->len--;
+    size_t disp_pos = 0, byte_pos = 0;
+    for (; byte_pos < l->len && disp_pos < cursor_x; byte_pos++) {
+        if ((l->data[byte_pos] & 0xC0) != 0x80) disp_pos++;
+    }
+    if (byte_pos < l->len) {
+        size_t next_byte = byte_pos + ((l->data[byte_pos] & 0x80) ? ((l->data[byte_pos] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_pos] & 0xF0) == 0xE0 ? 3 : 4)) : 1);
+        memmove(l->data + byte_pos, l->data + next_byte, l->len - next_byte);
+        l->len -= next_byte - byte_pos;
+        l->disp_len = utf8_display_length(l->data, l->len);
         modified = 1;
         update_line(cursor_y - scroll_y);
     } else if (cursor_y + 1 < buffer.count) {
@@ -370,6 +410,7 @@ void delete_char() {
         }
         memcpy(l->data + l->len, next->data, next->len);
         l->len += next->len;
+        l->disp_len = utf8_display_length(l->data, l->len);
         memmove(&buffer.lines[cursor_y + 1], &buffer.lines[cursor_y + 2], 
                 (buffer.count - cursor_y - 2) * sizeof(Line));
         buffer.count--;
@@ -392,13 +433,29 @@ void save_file() {
 
 void move_cursor_word(int direction) {
     Line *l = &buffer.lines[cursor_y];
+    size_t disp_pos = 0, byte_pos = 0;
+    for (; byte_pos < l->len && disp_pos < cursor_x; byte_pos++) {
+        if ((l->data[byte_pos] & 0xC0) != 0x80) disp_pos++;
+    }
     int x = cursor_x;
     if (direction < 0) {
-        while (x > 0 && isspace(l->data[x - 1])) x--;
-        while (x > 0 && !isspace(l->data[x - 1])) x--;
+        while (x > 0 && byte_pos > 0 && isspace(l->data[byte_pos - 1])) {
+            byte_pos -= (l->data[byte_pos - 1] & 0x80) ? ((l->data[byte_pos - 1] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_pos - 1] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+            if ((l->data[byte_pos] & 0xC0) != 0x80) x--;
+        }
+        while (x > 0 && byte_pos > 0 && !isspace(l->data[byte_pos - 1])) {
+            byte_pos -= (l->data[byte_pos - 1] & 0x80) ? ((l->data[byte_pos - 1] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_pos - 1] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+            if ((l->data[byte_pos] & 0xC0) != 0x80) x--;
+        }
     } else {
-        while (x < l->len && !isspace(l->data[x])) x++;
-        while (x < l->len && isspace(l->data[x])) x++;
+        while (x < l->disp_len && byte_pos < l->len && !isspace(l->data[byte_pos])) {
+            byte_pos += (l->data[byte_pos] & 0x80) ? ((l->data[byte_pos] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_pos] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+            if (byte_pos < l->len && (l->data[byte_pos] & 0xC0) != 0x80) x++;
+        }
+        while (x < l->disp_len && byte_pos < l->len && isspace(l->data[byte_pos])) {
+            byte_pos += (l->data[byte_pos] & 0x80) ? ((l->data[byte_pos] & 0xE0) == 0xC0 ? 2 : ((l->data[byte_pos] & 0xF0) == 0xE0 ? 3 : 4)) : 1;
+            if (byte_pos < l->len && (l->data[byte_pos] & 0xC0) != 0x80) x++;
+        }
     }
     cursor_x = x;
     if (cursor_x < scroll_x) {
@@ -490,7 +547,7 @@ int main(int argc, char *argv[]) {
         } else if (c == KEY_UP) {
             if (cursor_y > 0) {
                 cursor_y--;
-                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                if (cursor_x > buffer.lines[cursor_y].disp_len) cursor_x = buffer.lines[cursor_y].disp_len;
                 if (cursor_y < scroll_y) {
                     scroll_y--;
                     draw_text();
@@ -499,7 +556,7 @@ int main(int argc, char *argv[]) {
         } else if (c == KEY_DOWN) {
             if (cursor_y + 1 < buffer.count) {
                 cursor_y++;
-                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                if (cursor_x > buffer.lines[cursor_y].disp_len) cursor_x = buffer.lines[cursor_y].disp_len;
                 if (cursor_y >= scroll_y + rows - 2) {
                     scroll_y++;
                     draw_text();
@@ -515,7 +572,7 @@ int main(int argc, char *argv[]) {
             }
         } else if (c == KEY_RIGHT) {
             Line *l = &buffer.lines[cursor_y];
-            if (cursor_x < l->len) {
+            if (cursor_x < l->disp_len) {
                 cursor_x++;
                 if (cursor_x >= scroll_x + cols) {
                     scroll_x++;
@@ -532,7 +589,7 @@ int main(int argc, char *argv[]) {
                 cursor_y -= rows - 2;
                 if (scroll_y < 0) scroll_y = 0;
                 if (cursor_y < 0) cursor_y = 0;
-                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                if (cursor_x > buffer.lines[cursor_y].disp_len) cursor_x = buffer.lines[cursor_y].disp_len;
                 draw_text();
             }
         } else if (c == KEY_PGDOWN) {
@@ -540,7 +597,7 @@ int main(int argc, char *argv[]) {
                 scroll_y += rows - 2;
                 cursor_y += rows - 2;
                 if (cursor_y >= buffer.count) cursor_y = buffer.count - 1;
-                if (cursor_x > buffer.lines[cursor_y].len) cursor_x = buffer.lines[cursor_y].len;
+                if (cursor_x > buffer.lines[cursor_y].disp_len) cursor_x = buffer.lines[cursor_y].disp_len;
                 draw_text();
             }
         } else if (c == KEY_HOME) {
@@ -549,7 +606,7 @@ int main(int argc, char *argv[]) {
             draw_text();
         } else if (c == KEY_END) {
             Line *l = &buffer.lines[cursor_y];
-            cursor_x = l->len;
+            cursor_x = l->disp_len;
             if (cursor_x >= cols) scroll_x = cursor_x - cols + 1;
             else scroll_x = 0;
             draw_text();
@@ -563,7 +620,7 @@ int main(int argc, char *argv[]) {
                     delete_char();
                 } else if (cursor_y > 0) {
                     Line *prev = &buffer.lines[cursor_y - 1];
-                    cursor_x = prev->len;
+                    cursor_x = prev->disp_len;
                     delete_char();
                     cursor_y--;
                 }
