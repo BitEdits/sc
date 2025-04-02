@@ -328,8 +328,10 @@ int get_input() {
 // UI drawing
 void draw_header() {
     printf("\x1b[1;1H\x1b[33;44m▄%s%s TV \x1b[90;106m    [%s]    \x1b[37;46m    %s%s%s%-*s", COLOR_PINK_BG, COLOR_WHITE, filename,
-           view_mode ? "[View]" : "[Edit]", view_mode ? "" : (insert_mode ? "[Insering]" : "[Override]"), 
-           modified ? "[+]" : "", cols - ((int)strlen(filename)), "");
+        view_mode ? "[VIEW]" : "[EDIT]",
+        view_mode ? "" : (insert_mode ? "[INSERTING]"
+                                      : "[REPLACING]"), 
+        modified ? "[+]" : "", cols - ((int)strlen(filename)), "");
     printf("\x1b[K");
 }
 
