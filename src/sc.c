@@ -399,7 +399,8 @@ int main() {
                 draw_interface();
             } else if (!show_command_buffer) { // Відкриття теки
                 if (active_panel->files[active_panel->cursor].is_dir) {
-                    if (active_panel->dir_history_count < MAX_FILES) {
+
+                   if (active_panel->dir_history_count < MAX_FILES) {
                         DirHistory *dh = &active_panel->dir_history[active_panel->dir_history_count];
                         strcpy(dh->parent_path, active_panel->path);
                         strcpy(dh->dir_name, active_panel->files[active_panel->cursor].name);
@@ -410,6 +411,7 @@ int main() {
                     normalize(active_panel);
                     load_files(active_panel);
                     chdir(active_panel->path);
+
                     draw_interface();
                 }
             }
