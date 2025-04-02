@@ -173,7 +173,7 @@ int utf8_char_width(uint32_t cp) {
     if (cp >= 0xA490 && cp <= 0xA4CF) return 2;  // Yi Radicals (e.g., ê’, ê“)
     if (cp >= 0xAC00 && cp <= 0xD7AF) return 2;  // Hangul Syllables (e.g., ê°€, íž)
     if (cp >= 0xD800 && cp <= 0xDFFF) return 0;  // Surrogate pairs (invalid in UTF-8)
-    if (cp >= 0xF900 && cp <= 0xFAFF) return 2;  // CJK Compatibility Ideographs (e.g., ï¤€, ï«)
+    if (cp >= 0xF900 && cp <= 0xFAFF) return 1;  // CJK Compatibility Ideographs (e.g., ï¤€, ï«)
     if (cp >= 0xFB00 && cp <= 0xFB4F) return 1;  // Alphabetic Presentation Forms (e.g., ï¬€, ï­)
     if (cp >= 0xFE00 && cp <= 0xFE0F) return 0;  // Variation Selectors (e.g., ï¸€, ï¸)
     if (cp >= 0xFE10 && cp <= 0xFE1F) return 2;  // Vertical Forms (e.g., ï¸, ï¸)
