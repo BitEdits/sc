@@ -20,6 +20,8 @@
 #define COLOR_WHITE "\x1b[1;37m" // Bright white for text
 #define COLOR_PINK_BG "\x1b[48;2;255;105;180m"
 
+#define TAB_WIDTH  4
+
 // Key codes from socha.h
 #define KEY_TAB    9
 #define KEY_ESC    1000
@@ -91,6 +93,33 @@ size_t utf8_char_bytes(const char *data, size_t pos, size_t len) {
     return (c & 0x80) ? ((c & 0xE0) == 0xC0 ? 2 : ((c & 0xF0) == 0xE0 ? 3 : 4)) : 1;
 }
 
+// Helper function to find the last complete UTF-8 character in a buffer
+static size_t find_last_utf8_boundary(const char *buf, size_t len) {
+    if (len == 0) return 0;
+
+    size_t i = len;
+    while (i > 0) {
+        i--;
+        unsigned char byte = (unsigned char)buf[i];
+        if ((byte & 0x80) == 0) {  // 1-byte character (ASCII)
+            return i + 1;
+        } else if ((byte & 0xE0) == 0xC0) {  // 2-byte character
+            if (i + 1 < len && (unsigned char)(buf[i + 1] & 0xC0) == 0x80) {
+                return i + 2;
+            }
+        } else if ((byte & 0xF0) == 0xE0) {  // 3-byte character
+            if (i + 2 < len && (unsigned char)(buf[i + 1] & 0xC0) == 0x80 && (unsigned char)(buf[i + 2] & 0xC0) == 0x80) {
+                return i + 3;
+            }
+        } else if ((byte & 0xF8) == 0xF0) {  // 4-byte character
+            if (i + 3 < len && (unsigned char)(buf[i + 1] & 0xC0) == 0x80 && (unsigned char)(buf[i + 2] & 0xC0) == 0x80 && (unsigned char)(buf[i + 3] & 0xC0) == 0x80) {
+                return i + 4;
+            }
+        }
+    }
+    return 0;
+}
+
 uint32_t utf8_to_codepoint(const char *data, size_t pos, size_t len, size_t *bytes) {
     if (pos >= len) {
         *bytes = 1;
@@ -118,69 +147,69 @@ uint32_t utf8_to_codepoint(const char *data, size_t pos, size_t len, size_t *byt
 }
 
 int utf8_char_width(uint32_t cp) {
-    if (cp >= 0x0000 && cp <= 0x007F) return 1;  // Basic Latin (ASCII, e.g., a, 1, #)
-    if (cp >= 0x0080 && cp <= 0x00FF) return 1;  // Latin-1 Supplement (e.g., é, ñ)
-    if (cp >= 0x0100 && cp <= 0x017F) return 1;  // Latin Extended-A (e.g., ě, ł)
-    if (cp >= 0x0180 && cp <= 0x024F) return 1;  // Latin Extended-B (e.g., ƀ, ɏ)
-    if (cp >= 0x0250 && cp <= 0x02AF) return 1;  // IPA Extensions (e.g., ɐ, ʯ)
-    if (cp >= 0x0300 && cp <= 0x036F) return 0;  // Combining Diacritical Marks (e.g., ◌́, ◌̈)
-    if (cp >= 0x0370 && cp <= 0x03FF) return 1;  // Greek and Coptic (e.g., π, Ω)
-    if (cp >= 0x0400 && cp <= 0x04FF) return 1;  // Cyrillic (e.g., б, я)
-    if (cp >= 0x0500 && cp <= 0x052F) return 1;  // Cyrillic Supplement (e.g., ԯ, Ԯ)
-    if (cp >= 0x0530 && cp <= 0x058F) return 1;  // Armenian (e.g., Ա, Ֆ)
-    if (cp >= 0x0590 && cp <= 0x05FF) return 1;  // Hebrew (e.g., א, ת)
-    if (cp >= 0x0600 && cp <= 0x06FF) return 1;  // Arabic (e.g., أ, ي)
-    if (cp >= 0x0700 && cp <= 0x074F) return 1;  // Syriac (e.g., ܐ, ܯ)
-    if (cp >= 0x0780 && cp <= 0x07BF) return 1;  // Thaana (e.g., ހ,  )
-    if (cp >= 0x0900 && cp <= 0x097F) return 1;  // Devanagari (e.g., अ, ह)
-    if (cp >= 0x0980 && cp <= 0x09FF) return 1;  // Bengali (e.g., অ, হ)
-    if (cp >= 0x0A00 && cp <= 0x0A7F) return 1;  // Gurmukhi (e.g., ਅ, ਹ)
-    if (cp >= 0x0A80 && cp <= 0x0AFF) return 1;  // Gujarati (e.g., અ, હ)
-    if (cp >= 0x0B00 && cp <= 0x0B7F) return 1;  // Oriya (e.g., ଅ, ହ)
-    if (cp >= 0x0B80 && cp <= 0x0BFF) return 1;  // Tamil (e.g., அ, ஹ)
-    if (cp >= 0x0C00 && cp <= 0x0C7F) return 1;  // Telugu (e.g., అ, హ)
-    if (cp >= 0x0C80 && cp <= 0x0CFF) return 1;  // Kannada (e.g., ಅ, ಹ)
-    if (cp >= 0x0D00 && cp <= 0x0D7F) return 1;  // Malayalam (e.g., അ, ഹ)
-    if (cp >= 0x0E00 && cp <= 0x0E7F) return 1;  // Thai (e.g., ก, ๏)
-    if (cp >= 0x0E80 && cp <= 0x0EFF) return 1;  // Lao (e.g., ກ, ໝ)
-    if (cp >= 0x10A0 && cp <= 0x10FF) return 1;  // Georgian (e.g., Ⴀ, ჿ)
-    if (cp >= 0x1100 && cp <= 0x11FF) return 2;  // Hangul Jamo (e.g., ᄀ, ᇿ)
-    if (cp >= 0x1E00 && cp <= 0x1EFF) return 1;  // Latin Extended Additional (e.g., Ḁ, ỿ)
-    if (cp >= 0x1F00 && cp <= 0x1FFF) return 1;  // Greek Extended (e.g., ἀ, ῾)
-    if (cp >= 0x2000 && cp <= 0x206F) return 1;  // General Punctuation (e.g., —,  )
-    if (cp >= 0x2070 && cp <= 0x209F) return 1;  // Superscripts and Subscripts (e.g., ⁰, ₜ)
-    if (cp >= 0x20A0 && cp <= 0x20CF) return 1;  // Currency Symbols (e.g., €, ₿)
-    if (cp >= 0x2100 && cp <= 0x214F) return 1;  // Letterlike Symbols (e.g., ℀, ℏ)
-    if (cp >= 0x2150 && cp <= 0x218F) return 1;  // Number Forms (e.g., ⅐, ↉)
-    if (cp >= 0x2190 && cp <= 0x21FF) return 1;  // Arrows (e.g., →, ↻)
-    if (cp >= 0x2200 && cp <= 0x22FF) return 1;  // Mathematical Operators (e.g., ∀, ∮)
-    if (cp >= 0x2300 && cp <= 0x23FF) return 1;  // Miscellaneous Technical (e.g., ⌂, ⏿)
-    if (cp >= 0x2460 && cp <= 0x24FF) return 1;  // Enclosed Alphanumerics (e.g., ①, ⓿)
-    if (cp >= 0x2500 && cp <= 0x257F) return 1;  // Box Drawing (e.g., ─, ╿)
-    if (cp >= 0x2580 && cp <= 0x259F) return 1;  // Block Elements (e.g., ▀, ▟)
-    if (cp >= 0x25A0 && cp <= 0x25FF) return 1;  // Geometric Shapes (e.g., ■, ◿)
-    if (cp >= 0x2600 && cp <= 0x26FF) return 1;  // Miscellaneous Symbols (e.g., ☀, ⛿)
-    if (cp >= 0x2700 && cp <= 0x27BF) return 1;  // Dingbats (e.g., ✀, ➿)
-    if (cp >= 0x2E80 && cp <= 0x2EFF) return 2;  // CJK Radicals Supplement (e.g., ⺀,  )
-    if (cp >= 0x2F00 && cp <= 0x2FDF) return 2;  // Kangxi Radicals (e.g., ⼀,  )
-    if (cp >= 0x3000 && cp <= 0x303F) return 2;  // CJK Symbols and Punctuation (e.g., 、, 〿)
-    if (cp >= 0x3040 && cp <= 0x309F) return 2;  // Hiragana (e.g., ぁ, ゟ)
-    if (cp >= 0x30A0 && cp <= 0x30FF) return 2;  // Katakana (e.g., ァ, ヿ)
-    if (cp >= 0x3100 && cp <= 0x312F) return 2;  // Bopomofo (e.g., ㄅ, ㄯ)
-    if (cp >= 0x3130 && cp <= 0x318F) return 2;  // Hangul Compatibility Jamo (e.g., ㄱ, ㅿ)
-    if (cp >= 0x31F0 && cp <= 0x31FF) return 2;  // Katakana Phonetic Extensions (e.g., ㇰ, ㇿ)
-    if (cp >= 0x3400 && cp <= 0x4DBF) return 2;  // CJK Unified Ideographs Ext. A (e.g., 㐀, 䶿)
-    if (cp >= 0x4E00 && cp <= 0x9FFF) return 2;  // CJK Unified Ideographs (e.g., 一, 鿿)
-    if (cp >= 0xA000 && cp <= 0xA48F) return 2;  // Yi Syllables (e.g., ꀀ,  )
-    if (cp >= 0xA490 && cp <= 0xA4CF) return 2;  // Yi Radicals (e.g., ꒐,  )
-    if (cp >= 0xAC00 && cp <= 0xD7AF) return 2;  // Hangul Syllables (e.g., 가,  )
-    if (cp >= 0xD800 && cp <= 0xDFFF) return 0;  // Surrogate pairs (invalid in UTF-8)
-    if (cp >= 0xF900 && cp <= 0xFAFF) return 2;  // CJK Compatibility Ideographs (e.g., 豈,  )
-    if (cp >= 0xFB00 && cp <= 0xFB4F) return 1;  // Alphabetic Presentation Forms (e.g., ﬀ, ﭏ)
-    if (cp >= 0xFE00 && cp <= 0xFE0F) return 0;  // Variation Selectors (e.g., ︀, ️)
-    if (cp >= 0xFE10 && cp <= 0xFE1F) return 2;  // Vertical Forms (e.g., ︐,  )
-    if (cp >= 0xFE30 && cp <= 0xFE4F) return 2;  // CJK Compatibility Forms (e.g., ︰, ﹏)
-    if (cp >= 0xFF00 && cp <= 0xFFEF) return 2;  // Halfwidth and Fullwidth Forms (e.g., ！, ｯ)
+    if (cp >= 0x00000 && cp <= 0x0007F) return 1; // Basic Latin (ASCII, e.g., a, 1, #)
+    if (cp >= 0x00080 && cp <= 0x000FF) return 1; // Latin-1 Supplement (e.g., é, ñ)
+    if (cp >= 0x00100 && cp <= 0x0017F) return 1; // Latin Extended-A (e.g., ě, ł)
+    if (cp >= 0x00180 && cp <= 0x0024F) return 1; // Latin Extended-B (e.g., ƀ, ɏ)
+    if (cp >= 0x00250 && cp <= 0x002AF) return 1; // IPA Extensions (e.g., ɐ, ʯ)
+    if (cp >= 0x00300 && cp <= 0x0036F) return 0; // Combining Diacritical Marks (e.g., ◌́, ◌̈)
+    if (cp >= 0x00370 && cp <= 0x003FF) return 1; // Greek and Coptic (e.g., π, Ω)
+    if (cp >= 0x00400 && cp <= 0x004FF) return 1; // Cyrillic (e.g., б, я)
+    if (cp >= 0x00500 && cp <= 0x0052F) return 1; // Cyrillic Supplement (e.g., ԯ, Ԯ)
+    if (cp >= 0x00530 && cp <= 0x0058F) return 1; // Armenian (e.g., Ա, Ֆ)
+    if (cp >= 0x00590 && cp <= 0x005FF) return 1; // Hebrew (e.g., א, ת)
+    if (cp >= 0x00600 && cp <= 0x006FF) return 1; // Arabic (e.g., أ, ي)
+    if (cp >= 0x00700 && cp <= 0x0074F) return 1; // Syriac (e.g., ܐ, ܯ)
+    if (cp >= 0x00780 && cp <= 0x007BF) return 1; // Thaana (e.g., ހ,  )
+    if (cp >= 0x00900 && cp <= 0x0097F) return 1; // Devanagari (e.g., अ, ह)
+    if (cp >= 0x00980 && cp <= 0x009FF) return 1; // Bengali (e.g., অ, হ)
+    if (cp >= 0x00A00 && cp <= 0x00A7F) return 1; // Gurmukhi (e.g., ਅ, ਹ)
+    if (cp >= 0x00A80 && cp <= 0x00AFF) return 1; // Gujarati (e.g., અ, હ)
+    if (cp >= 0x00B00 && cp <= 0x00B7F) return 1; // Oriya (e.g., ଅ, ହ)
+    if (cp >= 0x00B80 && cp <= 0x00BFF) return 1; // Tamil (e.g., அ, ஹ)
+    if (cp >= 0x00C00 && cp <= 0x00C7F) return 1; // Telugu (e.g., అ, హ)
+    if (cp >= 0x00C80 && cp <= 0x00CFF) return 1; // Kannada (e.g., ಅ, ಹ)
+    if (cp >= 0x00D00 && cp <= 0x00D7F) return 1; // Malayalam (e.g., അ, ഹ)
+    if (cp >= 0x00E00 && cp <= 0x00E7F) return 1; // Thai (e.g., ก, ๏)
+    if (cp >= 0x00E80 && cp <= 0x00EFF) return 1; // Lao (e.g., ກ, ໝ)
+    if (cp >= 0x010A0 && cp <= 0x010FF) return 1; // Georgian (e.g., Ⴀ, ჿ)
+    if (cp >= 0x01100 && cp <= 0x011FF) return 2; // Hangul Jamo (e.g., ᄀ, ᇿ)
+    if (cp >= 0x01E00 && cp <= 0x01EFF) return 1; // Latin Extended Additional (e.g., Ḁ, ỿ)
+    if (cp >= 0x01F00 && cp <= 0x01FFF) return 1; // Greek Extended (e.g., ἀ, ῾)
+    if (cp >= 0x02000 && cp <= 0x0206F) return 1; // General Punctuation (e.g., —,  )
+    if (cp >= 0x02070 && cp <= 0x0209F) return 1; // Superscripts and Subscripts (e.g., ⁰, ₜ)
+    if (cp >= 0x020A0 && cp <= 0x020CF) return 1; // Currency Symbols (e.g., €, ₿)
+    if (cp >= 0x02100 && cp <= 0x0214F) return 1; // Letterlike Symbols (e.g., ℀, ℏ)
+    if (cp >= 0x02150 && cp <= 0x0218F) return 1; // Number Forms (e.g., ⅐, ↉)
+    if (cp >= 0x02190 && cp <= 0x021FF) return 1; // Arrows (e.g., →, ↻)
+    if (cp >= 0x02200 && cp <= 0x022FF) return 1; // Mathematical Operators (e.g., ∀, ∮)
+    if (cp >= 0x02300 && cp <= 0x023FF) return 1; // Miscellaneous Technical (e.g., ⌂, ⏿)
+    if (cp >= 0x02460 && cp <= 0x024FF) return 1; // Enclosed Alphanumerics (e.g., ①, ⓿)
+    if (cp >= 0x02500 && cp <= 0x0257F) return 1; // Box Drawing (e.g., ─, ╿)
+    if (cp >= 0x02580 && cp <= 0x0259F) return 1; // Block Elements (e.g., ▀, ▟)
+    if (cp >= 0x025A0 && cp <= 0x025FF) return 1; // Geometric Shapes (e.g., ■, ◿)
+    if (cp >= 0x02600 && cp <= 0x026FF) return 1; // Miscellaneous Symbols (e.g., ☀, ⛿)
+    if (cp >= 0x02700 && cp <= 0x027BF) return 1; // Dingbats (e.g., ✀, ➿)
+    if (cp >= 0x02E80 && cp <= 0x02EFF) return 2; // CJK Radicals Supplement (e.g., ⺀,  )
+    if (cp >= 0x02F00 && cp <= 0x02FDF) return 2; // Kangxi Radicals (e.g., ⼀,  )
+    if (cp >= 0x03000 && cp <= 0x0303F) return 2; // CJK Symbols and Punctuation (e.g., 、, 〿)
+    if (cp >= 0x03040 && cp <= 0x0309F) return 2; // Hiragana (e.g., ぁ, ゟ)
+    if (cp >= 0x030A0 && cp <= 0x030FF) return 2; // Katakana (e.g., ァ, ヿ)
+    if (cp >= 0x03100 && cp <= 0x0312F) return 2; // Bopomofo (e.g., ㄅ, ㄯ)
+    if (cp >= 0x03130 && cp <= 0x0318F) return 2; // Hangul Compatibility Jamo (e.g., ㄱ, ㅿ)
+    if (cp >= 0x031F0 && cp <= 0x031FF) return 2; // Katakana Phonetic Extensions (e.g., ㇰ, ㇿ)
+    if (cp >= 0x03400 && cp <= 0x04DBF) return 2; // CJK Unified Ideographs Ext. A (e.g., 㐀, 䶿)
+    if (cp >= 0x04E00 && cp <= 0x09FFF) return 2; // CJK Unified Ideographs (e.g., 一, 鿿)
+    if (cp >= 0x0A000 && cp <= 0x0A48F) return 2; // Yi Syllables (e.g., ꀀ,  )
+    if (cp >= 0x0A490 && cp <= 0x0A4CF) return 2; // Yi Radicals (e.g., ꒐,  )
+    if (cp >= 0x0AC00 && cp <= 0x0D7AF) return 2; // Hangul Syllables (e.g., 가,  )
+    if (cp >= 0x0D800 && cp <= 0x0DFFF) return 0; // Surrogate pairs (invalid in UTF-8)
+    if (cp >= 0x0F900 && cp <= 0x0FAFF) return 2; // CJK Compatibility Ideographs (e.g., 豈,  )
+    if (cp >= 0x0FB00 && cp <= 0x0FB4F) return 1; // Alphabetic Presentation Forms (e.g., ﬀ, ﭏ)
+    if (cp >= 0x0FE00 && cp <= 0x0FE0F) return 0; // Variation Selectors (e.g., ︀, ️)
+    if (cp >= 0x0FE10 && cp <= 0x0FE1F) return 2; // Vertical Forms (e.g., ︐,  )
+    if (cp >= 0x0FE30 && cp <= 0x0FE4F) return 2; // CJK Compatibility Forms (e.g., ︰, ﹏)
+    if (cp >= 0x0FF00 && cp <= 0x0FFEF) return 2; // Halfwidth and Fullwidth Forms (e.g., ！, ｯ)
     if (cp >= 0x1D400 && cp <= 0x1D7FF) return 1; // Mathematical Alphanumeric Symbols (e.g., 𝐀, 𝟿)
     if (cp >= 0x1F000 && cp <= 0x1F02F) return 2; // Mahjong Tiles (e.g., 🀀,  )
     if (cp >= 0x1F030 && cp <= 0x1F09F) return 2; // Domino Tiles (e.g., 🀰,  )
@@ -481,6 +510,55 @@ void update_line(int line) {
     }
 }
 
+static uint32_t get_utf8_char_at(const char *data, size_t byte_pos, size_t len, size_t *bytes, int *width) {
+    if (byte_pos >= len) {
+        *bytes = 0;
+        *width = 1;  // Space character for end of line
+        return ' ';
+    }
+
+    size_t remaining = len - byte_pos;
+    uint32_t cp = utf8_to_codepoint(data, byte_pos, len, bytes);
+    if (cp == 0 && *bytes == 1) {  // Invalid UTF-8
+        *width = 1;
+        return '?';
+    }
+
+    if (cp == '\t') {
+        *width = TAB_WIDTH - (byte_to_display(data, byte_pos, len) % TAB_WIDTH);
+    } else {
+        *width = utf8_char_width(cp);
+    }
+    return cp;
+}
+
+// Helper function to convert a codepoint back to UTF-8 for printing
+static void print_utf8_char(uint32_t cp) {
+    char buf[5];
+    if (cp == ' ') {
+        printf(" ");
+        return;
+    }
+    size_t len = 0;
+    if (cp <= 0x7F) {
+        buf[len++] = cp;
+    } else if (cp <= 0x7FF) {
+        buf[len++] = 0xC0 | (cp >> 6);
+        buf[len++] = 0x80 | (cp & 0x3F);
+    } else if (cp <= 0xFFFF) {
+        buf[len++] = 0xE0 | (cp >> 12);
+        buf[len++] = 0x80 | ((cp >> 6) & 0x3F);
+        buf[len++] = 0x80 | (cp & 0x3F);
+    } else if (cp <= 0x10FFFF) {
+        buf[len++] = 0xF0 | (cp >> 18);
+        buf[len++] = 0x80 | ((cp >> 12) & 0x3F);
+        buf[len++] = 0x80 | ((cp >> 6) & 0x3F);
+        buf[len++] = 0x80 | (cp & 0x3F);
+    }
+    buf[len] = '\0';
+    printf("%s", buf);
+}
+
 void draw_text() {
     printf("\x1b[2;1H\x1b[J");  // Clear from cursor to end of screen
     for (int i = 0; i < rows - 2; i++) {
@@ -500,17 +578,25 @@ void draw_text() {
             }
         }
     }
+
     // Draw new cursor
     if (!view_mode) {
         Line *l = &buffer.lines[cursor_y];
         size_t disp_x = byte_to_display(l->data, cursor_x, l->len);
         int x = disp_x - scroll_x;
-        char c = (cursor_x < l->len) ? l->data[cursor_x] : ' ';
         int cursor_row = cursor_y - scroll_y + 2;
         if (x >= 0 && x < cols && cursor_row >= 2 && cursor_row <= rows - 1) {
-            printf("\x1b[%d;%dH\x1b[7m%c\x1b[0m", cursor_row, x + 1, c);
+            size_t bytes;
+            int width;
+            uint32_t cp = get_utf8_char_at(l->data, cursor_x, l->len, &bytes, &width);
+            printf("\x1b[%d;%dH\x1b[7m", cursor_row, x + 1);
+            print_utf8_char(cp);
+            printf("\x1b[0m");
+            if (width > 1) printf("\x1b[%d;%dH", cursor_row, x + width + 1);
+            printf("\x1b[%d;1H", cursor_row);
         }
     }
+
     last_cursor_x = cursor_x;
     last_cursor_y = cursor_y;
     // Ensure cursor is at a safe position after drawing
@@ -837,189 +923,3 @@ int main(int argc, char *argv[]) {
     return 0;
 
 }
-/*
-// Main
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Usage: texpro <filename>\n");
-        return 1;
-    }
-
-    strncpy(filename, argv[1], sizeof(filename) - 1);
-    filename[sizeof(filename) - 1] = 0;
-
-    struct stat st;
-    if (stat(filename, &st) == 0) {
-        file_size = st.st_size;
-        fd = open(filename, O_RDWR);
-    } else {
-        fd = open(filename, O_RDWR | O_CREAT, 0644);
-        file_size = 0;
-    }
-    if (fd == -1) {
-        perror("Failed to open file");
-        return 1;
-    }
-
-    enable_raw_mode();
-    atexit(disable_raw_mode);
-    signal(SIGWINCH, handle_resize);
-    get_window_size(&rows, &cols);
-
-    load_file();
-
-    printf("\x1b[?1049h");
-    while (1) {
-        if (resize_flag) {
-            get_window_size(&rows, &cols);
-            if (cursor_y >= rows - 2) cursor_y = rows - 3;
-            resize_flag = 0;
-            draw_text();
-        }
-
-        draw_header();
-        draw_text();
-        draw_footer();
-
-        int c = get_input();
-        if (c == KEY_F1) {
-            // Help (placeholder)
-        } else if (c == KEY_F3) {
-            if (view_mode) {  // In View mode, F3 quits
-                if (!modified || handle_menu()) break;
-            } else {  // In Edit mode, F3 switches to View mode
-                view_mode = 1;
-                draw_header();
-            }
-        } else if (c == KEY_F4) {
-            if (!view_mode) {  // In Edit mode, F4 quits
-                if (!modified || handle_menu()) break;
-            } else {  // In View mode, F4 switches to Edit mode
-                view_mode = 0;
-                draw_header();
-            }
-        } else if (c == KEY_F5) {
-            show_blanks = !show_blanks;
-            draw_text();
-        } else if (c == KEY_F10) {
-            if (!modified || handle_menu()) break;  // F10 quits in both modes
-        } else if (c == KEY_UP) {
-            if (cursor_y > 0) {
-                cursor_y--;
-                size_t disp_x = byte_to_display(buffer.lines[cursor_y].data, cursor_x, buffer.lines[cursor_y].len);
-                if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
-                    cursor_x = buffer.lines[cursor_y].len;
-                }
-                if (cursor_y < scroll_y) {
-                    scroll_y--;
-                    draw_text();
-                }
-            }
-        } else if (c == KEY_DOWN) {
-            if (cursor_y + 1 < buffer.count) {
-                cursor_y++;
-                size_t disp_x = byte_to_display(buffer.lines[cursor_y].data, cursor_x, buffer.lines[cursor_y].len);
-                if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
-                    cursor_x = buffer.lines[cursor_y].len;
-                }
-                if (cursor_y >= scroll_y + rows - 2) {
-                    scroll_y++;
-                    draw_text();
-                }
-            }
-        } else if (c == KEY_LEFT) {
-            if (cursor_x > 0) {
-                size_t i = cursor_x;
-                do {
-                    i--;
-                } while (i > 0 && (buffer.lines[cursor_y].data[i] & 0xC0) == 0x80);
-                cursor_x = i;
-                size_t disp_x = byte_to_display(buffer.lines[cursor_y].data, cursor_x, buffer.lines[cursor_y].len);
-                if (disp_x < scroll_x) {
-                    scroll_x--;
-                    draw_text();
-                }
-            }
-        } else if (c == KEY_RIGHT) {
-            Line *l = &buffer.lines[cursor_y];
-            if (cursor_x < l->len) {
-                cursor_x += utf8_char_bytes(l->data, cursor_x, l->len);
-                size_t disp_x = byte_to_display(l->data, cursor_x, l->len);
-                if (disp_x >= scroll_x + cols) {
-                    scroll_x++;
-                    draw_text();
-                }
-            }
-        } else if (c == KEY_CTRL_LEFT && !view_mode) {
-            move_cursor_word(-1);
-        } else if (c == KEY_CTRL_RIGHT && !view_mode) {
-            move_cursor_word(1);
-        } else if (c == KEY_PGUP) {
-            if (scroll_y > 0) {
-                scroll_y -= rows - 2;
-                cursor_y -= rows - 2;
-                if (scroll_y < 0) scroll_y = 0;
-                if (cursor_y < 0) cursor_y = 0;
-                size_t disp_x = byte_to_display(buffer.lines[cursor_y].data, cursor_x, buffer.lines[cursor_y].len);
-                if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
-                    cursor_x = buffer.lines[cursor_y].len;
-                }
-                draw_text();
-            }
-        } else if (c == KEY_PGDOWN) {
-            if (scroll_y + rows - 2 < buffer.count) {
-                scroll_y += rows - 2;
-                cursor_y += rows - 2;
-                if (cursor_y >= buffer.count) cursor_y = buffer.count - 1;
-                size_t disp_x = byte_to_display(buffer.lines[cursor_y].data, cursor_x, buffer.lines[cursor_y].len);
-                if (disp_x > utf8_display_length(buffer.lines[cursor_y].data, buffer.lines[cursor_y].len)) {
-                    cursor_x = buffer.lines[cursor_y].len;
-                }
-                draw_text();
-            }
-        } else if (c == KEY_HOME) {
-            cursor_x = 0;
-            scroll_x = 0;
-            draw_text();
-        } else if (c == KEY_END) {
-            Line *l = &buffer.lines[cursor_y];
-            cursor_x = l->len;
-            size_t disp_x = byte_to_display(l->data, cursor_x, l->len);
-            if (disp_x >= cols) scroll_x = disp_x - cols + 1;
-            else scroll_x = 0;
-            draw_text();
-        } else if (!view_mode) {
-            if (c == KEY_INSERT) {
-                insert_mode = !insert_mode;
-                draw_header();
-            } else if (c == KEY_BACKSPACE) {
-                if (cursor_x > 0) {
-                    size_t i = cursor_x;
-                    do {
-                        i--;
-                    } while (i > 0 && (buffer.lines[cursor_y].data[i] & 0xC0) == 0x80);
-                    cursor_x = i;
-                    delete_char();
-                } else if (cursor_y > 0) {
-                    Line *prev = &buffer.lines[cursor_y - 1];
-                    cursor_x = prev->len;
-                    delete_char();
-                    cursor_y--;
-                }
-            } else if (c == KEY_DELETE) {
-                delete_char();
-            } else if (c >= 32 && c <= 126) {
-                insert_char(c);
-            } else if (c == KEY_ENTER) {
-                insert_char('\n');
-            }
-        }
-    }
-
-    if (modified) save_file();
-    close(fd);
-    free_buffer();
-    printf("\x1b[?1049l\x1b[2J\x1b[H");
-    return 0;
-}
-*/
