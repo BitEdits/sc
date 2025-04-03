@@ -1,4 +1,4 @@
-// micro-utf8.c library by Sokhatsky (200 LOC)
+// utf8.c library by Sokhatsky (200 LOC)
 
 #include <stdio.h>
 #include <stdint.h>
