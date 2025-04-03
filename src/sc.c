@@ -95,7 +95,9 @@ void normalize(Panel *active_panel) {
     active_panel->scroll_offset = 0;
 }
 
-void left_windows(Panel *active_panel) {
+#ifdef _WIN32
+
+void left_navigation(Panel *active_panel) {
     if (strcmp(active_panel->path, "/") != 0 && strcmp(active_panel->path, "C:/") != 0) { // Not root
                 char current_path[1024 * 8];
                 strcpy(current_path, active_panel->path);
@@ -133,7 +135,9 @@ void left_windows(Panel *active_panel) {
    }
 }
 
-void left_unix(Panel *active_panel) {
+#else
+
+void left_navigation(Panel *active_panel) {
     if (strcmp(active_panel->path, "/") != 0) { // Не корінь
                 // Зберігаємо поточний шлях для порівняння
                 char current_path[1024*3];
@@ -167,6 +171,8 @@ void left_unix(Panel *active_panel) {
                 draw_interface();
     }
 }
+
+#endif
 
 int main() {
     // Ініціалізація
@@ -357,11 +363,7 @@ int main() {
                 draw_command_line();
             }
         } else if (c == KEY_LEFT && !show_command_buffer && command_buffer[0] == 0) { // Вихід із директорії (Lynx-подібна навігація)
-#ifdef _WIN32
-            left_windows(active_panel);
-#else
-            left_unix(active_panel);
-#endif
+            left_navigation(active_panel);
         } else if (c == KEY_HOME) { // Home
             if (show_command_buffer) { // Режим Ctrl+O: скролінг історії
                 history_display_offset = 0;
@@ -398,7 +400,9 @@ int main() {
                 cmd_display_offset = 0;
                 draw_interface();
             } else if (!show_command_buffer) { // Відкриття теки
-                if (active_panel->files[active_panel->cursor].is_dir) {
+                if (strcmp(active_panel->files[active_panel->cursor].name, "..") == 0) {
+                   left_navigation(active_panel);
+                } else if (active_panel->files[active_panel->cursor].is_dir) {
 
                    if (active_panel->dir_history_count < MAX_FILES) {
                         DirHistory *dh = &active_panel->dir_history[active_panel->dir_history_count];
@@ -445,15 +449,6 @@ int main() {
                 cmd_cursor_pos++;
                 draw_command_line();
             }
-/*
-            {
-                int len = cmd_cursor_pos;
-                command_buffer[len] = c;
-                printf("\x1b[%d;%ldH\x1b[7m%c", rows - 1, cmd_cursor_pos + 2 + strlen(active_panel->path), command_buffer[cmd_cursor_pos]);
-                cmd_cursor_pos++;
-                draw_command_line();
-            }
-*/
         } else if (c == KEY_F3) { // F3 (View)
             if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
                 char cmd[1024*8];
