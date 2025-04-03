@@ -45,7 +45,7 @@ void draw_panel(Panel *panel, int start_col, int width, int is_active) {
     int sep1 = start_col + 1 + name_width;
     int sep2 = sep1 + size_width;
 
-    printf("%s\x1b[3;%dH%-*s│%-*s│%-*s%s", COLOR_TEXT, start_col + 1, name_width, "Name", size_width, "Size", date_width, "Date Time", COLOR_RESET);
+    printf("%s\x1b[3;%dH%-*s│%-*s│%-*s%s", COLOR_TEXT, start_col + 1, name_width, "Name", size_width, "Size/Type", date_width, "Date    |Time", COLOR_RESET);
 
     // Сепаратори для колонок
     for (int i = 0; i < visible_files; i++) { // Reduced by 1 to avoid extra line
@@ -457,13 +457,14 @@ int handle_menu() {
         }
 
         int c = get_input();
-        if (submenu_active) {
+        if (submenu_active)
+        {
             // Обробка введення в підменю
             if (c == KEY_UP && selected_item > 0) {
                 selected_item--;
             } else if (c == KEY_DOWN && selected_item < item_counts[selected_tab] - 1) {
                 selected_item++;
-            } else if (c == '\n') {
+            } else if (c == KEY_ENTER) {
                 // Виконуємо дію
                 if (selected_tab == 0) { // Left
                     if (selected_item == 0) { // Listing
