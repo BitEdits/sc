@@ -174,6 +174,17 @@ void left_navigation(Panel *active_panel) {
 
 #endif
 
+char *escape_single_quote(const char *input) {
+    size_t len = strlen(input);
+    size_t new_len = len * 2 + 1;
+    char *escaped = malloc(new_len);
+    if (!escaped) return NULL;
+    char *out = escaped;
+    for (size_t i = 0; i < len; i++) { if (input[i] == '\'') { strcpy(out, "\\'"); out += 2; } else *out++ = input[i]; }
+    *out = '\0';
+    return escaped;
+}
+
 int main() {
     // Ініціалізація
     enable_raw_mode();
@@ -472,8 +483,9 @@ int main() {
             if (!show_command_buffer && active_panel->file_count > 0 && !active_panel->files[active_panel->cursor].is_dir) {
                 char cmd[1024*8];
                 snprintf(cmd, sizeof(cmd), "tv %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
+                char *escape = escape_single_quote(cmd);
                 disable_raw_mode();
-                int ret = system(cmd);
+                int ret = system(escape);
                 if (ret == -1) {
                     printf("\x1b[2J\x1b[HFailed to execute editor. Ensure it exists and is executable.\n");
                     getchar();

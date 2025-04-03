@@ -89,7 +89,10 @@ int utf8_char_width(uint32_t cp) {
     if (cp >= 0x00600 && cp <= 0x006FF) return 1; // Arabic (e.g., أ, ي)
     if (cp >= 0x00700 && cp <= 0x0074F) return 1; // Syriac (e.g., ܐ, ܯ)
     if (cp >= 0x00780 && cp <= 0x007BF) return 1; // Thaana (e.g., ހ,  )
-    if (cp >= 0x00900 && cp <= 0x0097F) return 1; // Devanagari (e.g., अ, ह)
+    if (cp >= 0x0900 && cp <= 0x097F) { // Devanagari (e.g., अ, ह)
+        if ((cp >= 0x093C && cp <= 0x094D) || (cp >= 0x0951 && cp <= 0x0957)) return 0;
+        return 1;
+    }
     if (cp >= 0x00980 && cp <= 0x009FF) return 1; // Bengali (e.g., অ, হ)
     if (cp >= 0x00A00 && cp <= 0x00A7F) return 1; // Gurmukhi (e.g., ਅ, ਹ)
     if (cp >= 0x00A80 && cp <= 0x00AFF) return 1; // Gujarati (e.g., અ, હ)
@@ -99,6 +102,10 @@ int utf8_char_width(uint32_t cp) {
     if (cp >= 0x00C80 && cp <= 0x00CFF) return 1; // Kannada (e.g., ಅ, ಹ)
     if (cp >= 0x00D00 && cp <= 0x00D7F) return 1; // Malayalam (e.g., അ, ഹ)
     if (cp >= 0x00E00 && cp <= 0x00E7F) return 1; // Thai (e.g., ก, ๏)
+    if (cp >= 0x0E00 && cp <= 0x0E7F) {
+        if (cp == 0x0E31 || (cp >= 0x0E34 && cp <= 0x0E3A) || (cp >= 0x0E47 && cp <= 0x0E4E) || cp == 0x0E46) return 0;
+        return 1;
+    }
     if (cp >= 0x00E80 && cp <= 0x00EFF) return 1; // Lao (e.g., ກ, ໝ)
     if (cp >= 0x010A0 && cp <= 0x010FF) return 1; // Georgian (e.g., Ⴀ, ჿ)
     if (cp >= 0x01100 && cp <= 0x011FF) return 2; // Hangul Jamo (e.g., ᄀ, ᇿ)
