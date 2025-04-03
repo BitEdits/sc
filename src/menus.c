@@ -487,7 +487,7 @@ int handle_menu() {
                     }
                 } else if (selected_tab == 2) { // Command
                     if (selected_item == 0) { // Command history (C-o)
-                        show_command_buffer = 1;
+                        show_command_buffer ^= 1;
                         history_scroll_pos = history_count;
                         history_display_offset = 0;
                         draw_interface();
