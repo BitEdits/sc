@@ -465,7 +465,8 @@ int main() {
                 char cmd[1024*8];
                 snprintf(cmd, sizeof(cmd), "be %s/%s", active_panel->path, active_panel->files[active_panel->cursor].name);
                 disable_raw_mode();
-                int ret = system(cmd);
+                char *escape = escape_single_quote(cmd);
+                int ret = system(escape);
                 if (ret == -1) {
                     printf("\x1b[2J\x1b[HFailed to execute viewer. Ensure it exists and is executable.\n");
                     getchar();
