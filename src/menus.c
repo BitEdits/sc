@@ -345,9 +345,9 @@ void draw_menu() {
     int panel_width = (cols - 1) / 2; // 1 для роздільника
     const char *menu_tabs[] = {"Left", "File", "Command", "Options", "Right"};
     int tab_count = 5;
-    int start_col = 10;
+    int start_col = 10 + 4;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m%-*s", COLOR_PINK_BG, COLOR_WHITE, panel_width * 2 - 5, ""); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[33;44m▄%s%s МИХАСЯ \x1b[90;106m %-*s", COLOR_PINK_BG, COLOR_WHITE, panel_width * 2 - 5 - 5, ""); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
@@ -445,7 +445,7 @@ int handle_menu() {
         draw_menu();
 
         // Підсвічуємо вибрану вкладку
-        int tab_start_col = 10;
+        int tab_start_col = 10 + 4;
         for (int i = 0; i < selected_tab; i++) {
             tab_start_col += strlen(menu_tabs[i]) + 3;
         }
