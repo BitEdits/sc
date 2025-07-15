@@ -347,7 +347,7 @@ void draw_menu() {
     int tab_count = 5;
     int start_col = 10 + 4;
     // Малюємо меню у верхній частині з зеленим фоном (як у MC)
-    printf("\x1b[1;1H\x1b[33;44m▄%s%s МИХАСЯ \x1b[90;106m %-*s", COLOR_PINK_BG, COLOR_WHITE, panel_width * 2 - 5 - 5, ""); // Білий текст, зелений фон
+    printf("\x1b[1;1H\x1b[33;44m▄%s%s SC \x1b[90;106m %-*s", COLOR_PINK_BG, COLOR_WHITE, panel_width * 2 - 5 - 5, ""); // Білий текст, зелений фон
 
     // Малюємо вкладки з фіксованим відступом
     for (int i = 0; i < tab_count; i++) {
